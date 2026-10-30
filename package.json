@@ -1,0 +1,39 @@
+{
+  "name": "front-agrosense",
+  "version": "1.0.0",
+  "description": "Painel do Operador AgroSense — frontend de demonstração",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "vendor": "node scripts/vendor.js",
+    "start": "python3 -m http.server 4173 --bind 0.0.0.0",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "format": "prettier --write css js scripts tests *.html *.json *.md skills playwright.config.js",
+    "format:check": "prettier --check css js scripts tests *.html *.json *.md skills playwright.config.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dk-77777/Front-Agrosense.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/dk-77777/Front-Agrosense/issues"
+  },
+  "homepage": "https://github.com/dk-77777/Front-Agrosense#readme",
+  "dependencies": {
+    "@fontsource/manrope": "5.2.8",
+    "bootstrap": "5.3.8",
+    "bootstrap-icons": "1.13.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
+    "@playwright/test": "1.56.1",
+    "prettier": "3.6.2"
+  },
+  "private": true
+}

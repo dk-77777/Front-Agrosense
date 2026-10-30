@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#17664d" />
+    <title>Acesso · AgroSense</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/vendor/bootstrap.min.css" />
+    <link rel="stylesheet" href="assets/vendor/bootstrap-icons.css" />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  </head>
+  <body>
+    <main class="login-layout">
+      <section class="login-story" aria-label="AgroSense">
+        <a
+          class="brand"
+          id="login-brand"
+          href="./login.html"
+          aria-label="AgroSense"
+        ></a>
+        <div>
+          <span class="eyebrow" style="color: #c3d6cd"
+            >PRECISÃO EM CADA LEITURA</span
+          >
+          <h1 class="mt-3">
+            Mais clareza.<br />Mais controle.<br />Uma operação melhor.
+          </h1>
+          <p>
+            Acompanhe a condição do equipamento e identifique quando é hora de
+            agir.
+          </p>
+        </div>
+        <small>AgroSense · Monitoramento agroindustrial</small>
+      </section>
+      <section class="login-form-wrap">
+        <form id="login-form" class="login-form">
+          <span class="badge-status normal">AMBIENTE DEMONSTRATIVO</span>
+          <h1>Acesse sua operação</h1>
+          <p class="muted">Explore o painel do operador com dados simulados.</p>
+          <label class="form-label" for="email">E-mail de demonstração</label
+          ><input
+            class="form-control"
+            type="email"
+            autocomplete="username"
+            id="email"
+            name="email"
+            required
+            value="operador@agrosense.com"
+            aria-describedby="login-hint login-error"
+          />
+          <p class="small-text muted mt-2 mb-4" id="login-hint">
+            Perfil disponível nesta etapa: operador de máquinas.
+          </p>
+          <p id="login-error" class="text-danger" role="alert" hidden></p>
+          <button class="btn btn-primary" type="submit">
+            Entrar na demonstração
+            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+          </button>
+          <div class="status-note">
+            <i class="bi bi-info-circle" aria-hidden="true"></i> Acesso sem
+            senha para demonstração. Não utiliza autenticação real nem sensores
+            conectados.
+          </div>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="js/login.js"></script>
+  </body>
+</html>

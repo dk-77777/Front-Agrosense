@@ -1,0 +1,45 @@
+@font-face {
+  font-family: Manrope;
+  src: url("../assets/fonts/manrope-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Manrope;
+  src: url("../assets/fonts/manrope-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: Manrope;
+  src: url("../assets/fonts/manrope-latin-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: Manrope;
+  src: url("../assets/fonts/manrope-latin-800-normal.woff2") format("woff2");
+  font-weight: 800;
+  font-display: swap;
+}
+:root {
+  --color-brand: #17664d;
+  --color-deep: #103f31;
+  --color-ink: #192d29;
+  --color-muted: #647570;
+  --color-canvas: #f4f7f6;
+  --color-white: #fff;
+  --color-border: #dce5e0;
+  --color-green-tint: #eaf4ee;
+  --color-warning: #98621d;
+  --color-warning-tint: #fff4de;
+  --color-neutral: #586872;
+  --color-neutral-tint: #edf1f3;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+}
