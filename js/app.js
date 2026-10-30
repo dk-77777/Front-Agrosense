@@ -2,16 +2,30 @@ import { presentPage } from "./pages.js";
 import { temperatureChart } from "./ui/chart.js";
 import { getUser } from "./auth.js";
 import { profiles, can } from "./permissions.js";
-import { machines } from "./data/mock-machines.js";
-import { alerts } from "./data/mock-alerts.js";
+import { getMachines, getAlerts } from "./data/store.js";
+
 import { getReadings } from "./data/mock-readings.js";
 import { renderNavigation } from "./navigation.js";
 import { renderDashboard } from "./dashboard.js";
 import { setupReports } from "./reports.js";
 import { initWorkspace } from "./workspace.js";
+const syncConnection = () =>
+  (document.getElementById("connection-message").hidden = navigator.onLine);
+window.addEventListener("online", syncConnection);
+window.addEventListener("offline", syncConnection);
+syncConnection();
 const user = getUser();
 if (!user || !profiles[user.role]?.available) location.replace("./login.html");
-else if (can(user, "viewFleet")) {
+else if (
+  can(user, "viewFleet") ||
+  [
+    "maquinas.html",
+    "historico.html",
+    "alertas.html",
+    "usuarios.html",
+    "cadastro-usuario.html",
+  ].includes(location.pathname.split("/").pop())
+) {
   initWorkspace(user);
 } else if (
   !["", "index.html", "maquina.html", "alertas.html"].includes(
@@ -20,16 +34,17 @@ else if (can(user, "viewFleet")) {
 ) {
   location.replace("./index.html");
 } else {
-  const machine = machines.find((m) => m.id === user.machineId);
+  const machine = getMachines().find(
+    (m) =>
+      m.id ===
+      (new URLSearchParams(location.search).get("id") ||
+        new URLSearchParams(location.search).get("machine") ||
+        user.machineId),
+  );
   const machineAlerts = can(user, "viewAlerts")
-    ? alerts.filter((a) => a.machineId === user.machineId)
+    ? getAlerts().filter((a) => a.machineId === machine?.id)
     : [];
   renderNavigation(user, machineAlerts.length);
-  const syncConnection = () =>
-    (document.getElementById("connection-message").hidden = navigator.onLine);
-  window.addEventListener("online", syncConnection);
-  window.addEventListener("offline", syncConnection);
-  syncConnection();
   if (machine && can(user, "viewMachines")) {
     setupReports(user, machine);
     let currentReadings = [];

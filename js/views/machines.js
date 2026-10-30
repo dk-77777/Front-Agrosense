@@ -1,4 +1,5 @@
-import { getMachines, addMachine } from "../data/store.js";
+import { machineState } from "../data/condition.js";
+import { getMachines, addMachine, updateMachine } from "../data/store.js";
 import { can } from "../permissions.js";
 import { esc, statusBadge, detailLink, table, empty } from "./shared.js";
 export function machinesView(root, user) {
@@ -11,13 +12,17 @@ export function machinesView(root, user) {
     const all = getMachines().filter(
       (m) =>
         (m.id + " " + m.name).toLocaleLowerCase("pt-BR").includes(query) &&
-        (!status || m.status === status),
+        (!status ||
+          (status === "offline"
+            ? !machineState(m).recent
+            : machineState(m).condition === status)),
     );
     root.querySelector("#machine-results").innerHTML =
       table(
         [
           "Identificador e nome",
-          "Atualização",
+          "Comunicação",
+          "Análise",
           "Condição",
           "Última leitura",
           "Ação",
@@ -25,7 +30,7 @@ export function machinesView(root, user) {
         all
           .map(
             (m) =>
-              `<tr><td>${esc(m.id)} · ${esc(m.name)}</td><td>${m.status === "offline" ? "Sem dados recentes" : "Dados recentes"}</td><td>${statusBadge(m.status)}</td><td>${esc(m.updatedAt)}</td><td><a class="btn btn-outline-secondary" href="${detailLink(m.id)}">Ver detalhe</a></td></tr>`,
+              `<tr><td>${esc(m.id)} · ${esc(m.name)}${m.active === false ? " · Inativa" : ""}</td><td>${machineState(m).communication}</td><td>${machineState(m).analysisLabel}</td><td>${machineState(m).condition === "unknown" ? "Não determinada" : statusBadge(machineState(m).condition)}</td><td>${esc(m.updatedAt)}</td><td><a class="btn btn-outline-secondary" href="${detailLink(m.id)}">Ver detalhe</a>${can(user, "createMachine") ? ` <a class="btn btn-outline-secondary" href="./cadastro-maquina.html?id=${encodeURIComponent(m.id)}">Editar máquina</a>` : ""}</td></tr>`,
           )
           .join(""),
       ) +
@@ -39,7 +44,23 @@ export function machinesView(root, user) {
 }
 export function createView(root, user) {
   if (!can(user, "createMachine")) return false;
+  const editId = new URLSearchParams(location.search).get("id");
+  const old = editId ? getMachines().find((m) => m.id === editId) : null;
+  if (editId && !old) {
+    root.innerHTML = empty("Máquina não encontrada.");
+    return;
+  }
   root.innerHTML = `<form class="panel" id="create-form"><h2 class="mb-4">Informações do equipamento</h2><div class="row g-3"><div class="col-md-6"><label for="identifier" class="form-label">Identificador único</label><input id="identifier" class="form-control" required maxlength="30" pattern="[A-Za-z0-9-]+" placeholder="AG-006"></div><div class="col-md-6"><label for="machine-name" class="form-label">Nome da máquina</label><input id="machine-name" class="form-control" required maxlength="100"></div><div class="col-12"><label for="description" class="form-label">Descrição</label><textarea id="description" class="form-control" maxlength="500" placeholder="Localização e observações do equipamento"></textarea></div><fieldset class="col-12"><legend class="fs-6">Situação</legend><label class="me-4"><input type="radio" name="active" value="true" checked> Ativa</label><label><input type="radio" name="active" value="false"> Inativa</label></fieldset></div><p class="muted border-top pt-3 mt-3">O identificador será utilizado para associar as mensagens à máquina correta.</p><p class="text-danger" id="save-error" role="alert"></p><button class="btn btn-primary mt-3">Salvar máquina</button> <a href="./maquinas.html" class="btn btn-outline-secondary mt-3">Cancelar</a></form><aside class="panel mt-3"><h2>Antes de salvar</h2><p class="muted mt-2">Identificador e nome são obrigatórios. Identificadores repetidos serão bloqueados. Cadastro local demonstrativo, sem envio ao servidor.</p></aside>`;
+  if (old) {
+    root.querySelector("#identifier").value = old.id;
+    root.querySelector("#identifier").readOnly = true;
+    root.querySelector("#machine-name").value = old.name;
+    root.querySelector("#description").value = old.description ?? "";
+    root.querySelector(
+      `[name=active][value="${old.active !== false}"]`,
+    ).checked = true;
+    document.querySelector("h1").textContent = "Editar máquina";
+  }
   root.querySelector("form").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!can(user, "createMachine")) return;
@@ -47,6 +68,27 @@ export function createView(root, user) {
       const id = root.querySelector("#identifier").value.trim().toUpperCase(),
         name = root.querySelector("#machine-name").value.trim();
       if (!id || !name) throw Error("Preencha identificador e nome.");
+      const active =
+        root.querySelector("[name=active]:checked").value === "true";
+      if (
+        old?.active !== false &&
+        !active &&
+        !confirm("Inativar esta máquina? O histórico será preservado.")
+      )
+        return;
+      if (old) {
+        updateMachine(
+          {
+            id,
+            name,
+            description: root.querySelector("#description").value.trim(),
+            active,
+          },
+          user,
+        );
+        location.assign("./maquinas.html");
+        return;
+      }
       addMachine({
         id,
         name,

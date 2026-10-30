@@ -3,14 +3,15 @@ export const profiles = {
     label: "Operador de máquinas",
     available: true,
     viewMachines: true,
-    viewDetailedHistory: false,
+    viewDetailedHistory: true,
     viewAlerts: true,
     acknowledgeAlert: false,
     createMachine: false,
     viewManagementIndicators: false,
     navigation: [
       ["Painel", "./index.html", "grid"],
-      ["Minha máquina", "./maquina.html", "machine"],
+      ["Máquinas", "./maquinas.html", "machine"],
+      ["Histórico", "./historico.html", "graph-up"],
       ["Alertas", "./alertas.html", "bell"],
     ],
   },
@@ -54,5 +55,11 @@ profiles.ADMIN = {
   label: "Administrador",
   acknowledgeAlert: false,
   createMachine: true,
+  manageUsers: true,
+  navigation: [
+    ["Painel", "./index.html", "grid"],
+    ["Máquinas", "./maquinas.html", "machine"],
+    ["Usuários", "./usuarios.html", "people"],
+  ],
 };
 export const can = (user, action) => profiles[user?.role]?.[action] === true;

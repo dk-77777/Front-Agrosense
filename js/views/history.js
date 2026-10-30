@@ -6,6 +6,9 @@ export async function historyView(root) {
   const machines = getMachines();
   const points = await getReadings();
   root.innerHTML = `<form class="panel mb-3"><div class="row g-3"><div class="col-md-4"><label for="history-machine" class="form-label">Máquina</label><select id="history-machine" class="form-select">${machines.map((m) => `<option value="${esc(m.id)}">${esc(m.id)} · ${esc(m.name)}</option>`).join("")}</select></div><div class="col-md-4"><label class="form-label" for="start">Data inicial</label><input class="form-control" id="start" type="datetime-local" required value="2026-10-19T10:00"></div><div class="col-md-4"><label class="form-label" for="end">Data final</label><input class="form-control" id="end" type="datetime-local" required value="2026-10-19T10:30"></div></div><button class="btn btn-primary mt-3">Aplicar filtros</button> <button type="reset" class="btn btn-outline-secondary mt-3">Limpar filtros</button><p id="filter-error" role="alert" class="text-danger mt-2"></p></form><div id="history-results" aria-live="polite"></div>`;
+  const selected = new URLSearchParams(location.search).get("machine");
+  if (machines.some((m) => m.id === selected))
+    root.querySelector("#history-machine").value = selected;
   const render = () => {
     const start = new Date(root.querySelector("#start").value),
       end = new Date(root.querySelector("#end").value);
@@ -25,6 +28,9 @@ export async function historyView(root) {
             return date >= start && date <= end;
           })
         : [];
+    const url = new URL(location.href);
+    url.searchParams.set("machine", machine.id);
+    history.replaceState(null, "", url);
     root.querySelector("#history-results").innerHTML =
       `<section class="panel mb-3"><h2>Temperatura do processo</h2><p class="muted small-text">${esc(machine.id)} · Amostras simuladas de 19/10/2026</p>${filtered.length ? temperatureChart(filtered) : empty("Nenhuma leitura no período selecionado.")}</section><section class="panel">${table(
         ["Captura", "Processo", "Rotação", "Torque", "Resultado"],

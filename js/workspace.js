@@ -1,3 +1,5 @@
+import { usersView, userForm } from "./views/users.js";
+import { overview } from "./views/overview.js";
 import { renderNavigation } from "./navigation.js";
 import { getMachines, getAlerts } from "./data/store.js";
 import { can } from "./permissions.js";
@@ -11,6 +13,14 @@ export async function initWorkspace(user) {
   const root = document.getElementById("dashboard"),
     page = location.pathname.split("/").pop() || "index.html";
   const titles = {
+    "usuarios.html": [
+      "Usuários",
+      "Gerencie os acessos e os perfis da unidade.",
+    ],
+    "cadastro-usuario.html": [
+      "Cadastro de usuário",
+      "Identifique o usuário e suas permissões.",
+    ],
     "index.html": [
       "Visão geral da operação",
       "Acompanhe os equipamentos e suas condições.",
@@ -41,6 +51,8 @@ export async function initWorkspace(user) {
     ],
   };
   const required = {
+    "usuarios.html": "manageUsers",
+    "cadastro-usuario.html": "manageUsers",
     "historico.html": "viewDetailedHistory",
     "cadastro-maquina.html": "createMachine",
     "alertas.html": "viewAlerts",
@@ -50,6 +62,16 @@ export async function initWorkspace(user) {
   };
   document.querySelector(".page-header button").hidden = true;
   document.querySelector(".page-header .eyebrow").textContent = "OPERAÇÃO";
+  if (can(user, "manageUsers"))
+    titles["index.html"] = [
+      "Administração da unidade",
+      "Gerencie os cadastros de máquinas e os acessos da equipe.",
+    ];
+  else if (can(user, "acknowledgeAlert"))
+    titles["index.html"] = [
+      "Monitoramento da manutenção",
+      "Identifique os equipamentos e as ocorrências que precisam de avaliação.",
+    ];
   const title = titles[page] ?? titles["index.html"];
   document.querySelector("h1").textContent = title[0];
   document.querySelector(".page-header h1 + p").textContent = title[1];
@@ -71,7 +93,9 @@ export async function initWorkspace(user) {
         '<a href="./maquinas.html">Voltar às máquinas</a>';
       return;
     }
-    if (page === "maquinas.html") machinesView(root, user);
+    if (page === "usuarios.html") usersView(root, user);
+    else if (page === "cadastro-usuario.html") userForm(root, user);
+    else if (page === "maquinas.html") machinesView(root, user);
     else if (page === "cadastro-maquina.html") createView(root, user);
     else if (page === "historico.html") await historyView(root);
     else if (page === "alertas.html") alertsView(root, user);
@@ -101,25 +125,17 @@ export async function initWorkspace(user) {
         `<a class="btn btn-outline-secondary mt-3" href="./maquinas.html">Voltar às máquinas</a>`,
       );
     } else {
-      const all = getMachines();
-      root.innerHTML = `<div class="row g-3">${[
-        ["Máquinas monitoradas", all.length],
-        ["Em condição normal", all.filter((m) => m.status === "normal").length],
-        ["Exigem atenção", all.filter((m) => m.status === "warning").length],
-        ["Sem atualização", all.filter((m) => m.status === "offline").length],
-      ]
-        .map(
-          ([label, value]) =>
-            `<div class="col-sm-6 col-xl-3"><section class="panel"><h2>${label}</h2><p class="sensor-value">${value}</p></section></div>`,
-        )
-        .join(
-          "",
-        )}</div><section class="panel mt-4"><h2>Condição dos equipamentos</h2>${all.map((m) => `<div class="d-flex flex-wrap gap-3 justify-content-between border-bottom py-3"><a href="${detailLink(m.id)}">${esc(m.id)} · ${esc(m.name)}</a>${statusBadge(m.status)}</div>`).join("")}</section>`;
+      overview(root, user);
     }
   } catch {
-    root.innerHTML = empty(
-      "Não foi possível carregar os dados locais. Os dados existentes foram preservados. Tente recarregar a página.",
-    );
+    root.innerHTML =
+      empty(
+        "Não foi possível carregar os dados locais. Os dados existentes foram preservados. Tente novamente.",
+      ) +
+      '<button class="btn btn-primary mt-3" id="retry">Tentar novamente</button>';
+    root
+      .querySelector("#retry")
+      .addEventListener("click", () => initWorkspace(user));
   } finally {
     root.setAttribute("aria-busy", "false");
   }

@@ -25,7 +25,7 @@ Os arquivos de Bootstrap, Bootstrap Icons e Manrope estão incluídos em `assets
 - Sessão demonstrativa em `sessionStorage`, saída e restrições centralizadas.
 - Estados de carregamento, erro com nova tentativa, ausência de leituras e conexão offline.
 
-“Painel”, “Minha máquina” e “Alertas” abrem documentos próprios: `index.html`, `maquina.html` e `alertas.html`. A navegação preserva a sessão e identifica a página atual. O operador não reconhece nem encerra alertas, cadastra máquinas ou altera parâmetros.
+“Painel”, “Minha máquina” e “Alertas” abrem documentos próprios: `index.html`, `maquina.html` e `alertas.html`. A navegação preserva a sessão e identifica a página atual. O operador não reconhece nem encerra alertas, cadastra máquinas ou altera parâmetros. Pode consultar histórico, máquinas e alertas conforme o documento de requisitos.
 
 Os perfis técnico, gestor e administrador têm acesso demonstrativo: `tecnico@agrosense.com`, `gestor@agrosense.com`, `admin@agrosense.com`, todos sem senha. Técnico e gestor consultam máquinas e histórico; somente técnico reconhece alertas. Somente administrador cadastra máquinas. Operador continua limitado à sua máquina. Indicadores gerenciais avançados ainda não foram implementados.
 
@@ -61,7 +61,7 @@ npm test
 
 O Playwright inicia e encerra seu próprio servidor. Usa Chromium em `/usr/bin/chromium`; em outra máquina, defina `CHROMIUM_PATH` com o caminho do Chromium instalado. No ambiente de nuvem, servidor e navegador precisam da execução com acesso a sockets, fora do sandbox restrito.
 
-Foram executados **22 testes**, todos aprovados, cobrindo login/saída, restrições do operador, modais/teclado, menu mobile, relato/persistência/escape de HTML, erro/recuperação, dados vazios, offline e preservação de armazenamento inválido. Os testes responsivos verificam ausência de overflow e erros no console em **390, 768, 1024, 1366, 1440 e 1920 px**. O axe não encontrou violações automatizadas WCAG A/AA nas telas de acesso, painel e formulário; isso não substitui uma auditoria completa com tecnologias assistivas.
+Foram executados **31 testes**, todos aprovados, cobrindo login/saída, restrições do operador, modais/teclado, menu mobile, relato/persistência/escape de HTML, erro/recuperação, dados vazios, offline e preservação de armazenamento inválido. Os testes responsivos verificam ausência de overflow e erros no console em **390, 768, 1024, 1366, 1440 e 1920 px**. O axe não encontrou violações automatizadas WCAG A/AA nas telas de acesso, painel e formulário; isso não substitui uma auditoria completa com tecnologias assistivas.
 
 Screenshots por tamanho são geradas em `test-results/operator-*.png`; relatório navegável em `playwright-report/index.html`. Foram inspecionadas as capturas desktop e mobile. Não há build ou typecheck aplicável à stack escolhida.
 
@@ -76,3 +76,18 @@ As cinco capturas fornecidas pelo usuário orientam a hierarquia, disposição d
 ## Ambiente na nuvem
 
 Use o checkout existente. Cada tarefa já tem um ambiente isolado; não crie worktrees sem solicitação explícita. Processos precisam ser reiniciados em novas sessões. As instruções de instalação e início também são salvas no rascunho da configuração do ambiente; salvar esse rascunho não publica o ambiente nem envia código ao GitHub.
+
+## Base dos painéis revisada pelo documento do projeto
+
+- Operador: Painel, Máquinas, Histórico e Alertas. A apresentação continua simples e focada na operação; os links do detalhe mantêm a máquina nos filtros e na URL.
+- Técnico: resumo de condições, equipamentos para investigar e ocorrências abertas/reconhecidas. Reconhecimento registra visualização e não encerra o episódio.
+- Gestor: prioridades, distribuição das condições e contagem de ocorrências por equipamento, calculadas sobre os registros disponíveis. Não há percentuais de disponibilidade ou estimativas de economia sem dados.
+- Administrador: resumo de cadastros, máquinas e usuários ativos/inativos; criação, edição e inativação com confirmação, sem apagar histórico. Não reconhece alertas técnicos.
+
+A condição da última análise, a comunicação e o estado da análise são apresentados separadamente. `js/data/condition.js` calcula falta de atualização após **mais de 30 segundos**. O relógio demonstrativo é fixo em **19/10/2026 10:30:05**, explicitado na interface; esses horários não são dados atuais. A função aceita outro horário para futura integração. A análise indisponível não classifica a máquina como normal e as leituras disponíveis continuam acessíveis.
+
+`recordAnalysis` modela a atualização do episódio: um resultado de atenção atualiza um episódio existente; um resultado normal o encerra, preservando reconhecimento e histórico. Essa função é validada por testes; ainda não existe recebimento automático de análises do backend. Não há botão de encerramento manual.
+
+Cadastros de usuários ficam em `agrosenseUsers` no navegador. O acesso demonstrativo resolve o perfil e a situação atualizados; usuários inativos não iniciam nem mantêm sessão após navegação/recarregamento. O administrador não pode remover o próprio acesso administrativo. Essa lógica demonstra o fluxo: **autenticação e autorização reais no backend continuam pendentes**.
+
+A suíte foi ampliada com testes de limite temporal, análise indisponível, navegação contextual, edição/inativação sem perda de histórico, gestão de usuários e restrições por URL.

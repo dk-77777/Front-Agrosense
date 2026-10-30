@@ -19,7 +19,15 @@ export function presentPage() {
     if (link) {
       const anchor = document.createElement("a");
       anchor.className = link.className;
-      anchor.href = "./maquina.html";
+      anchor.href =
+        "./maquina.html?id=" +
+        encodeURIComponent(
+          document
+            .querySelector("#machine-section .machine-id")
+            .textContent.split("·")
+            .at(-1)
+            .trim(),
+        );
       anchor.innerHTML = link.innerHTML;
       link.replaceWith(anchor);
     }

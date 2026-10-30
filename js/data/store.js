@@ -1,3 +1,4 @@
+import { can } from "../permissions.js";
 import { machines as initialMachines } from "./mock-machines.js";
 import { alerts as initialAlerts } from "./mock-alerts.js";
 const fleet = [
@@ -38,6 +39,8 @@ export function addMachine(machine) {
   localStorage.setItem("agrosenseMachines", JSON.stringify([...all, machine]));
 }
 export function acknowledge(id, user, observation) {
+  if (!can(user, "acknowledgeAlert"))
+    throw Error("Reconhecimento exclusivo do técnico.");
   const all = getAlerts();
   const alert = all.find((a) => a.id === id);
   if (!alert || alert.status !== "Aberto")
@@ -48,5 +51,46 @@ export function acknowledge(id, user, observation) {
     acknowledgedAt: new Date().toISOString(),
     observation,
   });
+  localStorage.setItem("agrosenseAlerts", JSON.stringify(all));
+}
+
+export function updateMachine(record, actor) {
+  if (!can(actor, "createMachine")) throw Error("Acesso restrito.");
+  const all = getMachines();
+  const old = all.find((m) => m.id === record.id);
+  if (!old || !record.name.trim()) throw Error("Máquina inválida.");
+  const next = {
+    ...old,
+    name: record.name.trim(),
+    description: record.description,
+    active: record.active,
+  };
+  localStorage.setItem(
+    "agrosenseMachines",
+    JSON.stringify(all.map((m) => (m.id === next.id ? next : m))),
+  );
+}
+// Normal analyses close the episode; acknowledgement alone never closes it.
+export function recordAnalysis(machineId, result, at) {
+  if (!["normal", "warning"].includes(result))
+    throw Error("Resultado inválido.");
+  const all = getAlerts();
+  const open = all.find(
+    (a) => a.machineId === machineId && a.status !== "Encerrado",
+  );
+  if (result === "normal" && open) {
+    open.status = "Encerrado";
+    open.closedAt = at;
+  } else if (result === "warning" && open) open.lastOccurrenceAt = at;
+  else if (result === "warning")
+    all.push({
+      id: crypto.randomUUID(),
+      machineId,
+      status: "Aberto",
+      time: at.slice(11, 19),
+      openedAt: at,
+      title: "Condição de atenção",
+      description: "Condição identificada pela análise.",
+    });
   localStorage.setItem("agrosenseAlerts", JSON.stringify(all));
 }

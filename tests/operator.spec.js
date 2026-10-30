@@ -30,11 +30,14 @@ for (const width of [390, 768, 1024, 1366, 1440, 1920]) {
     ).toBe(true);
     if (width < 992) {
       await page.getByRole("button", { name: "Abrir menu" }).click();
-      await expect(page.getByRole("navigation")).toBeVisible();
+      await expect(
+        page.getByRole("navigation", { name: "Navegação principal" }),
+      ).toBeVisible();
     }
-    await page.getByRole("link", { name: "Minha máquina" }).click();
+    await page.getByRole("link", { name: "Máquinas" }).click();
     if (width < 992)
       await expect(page.locator("#sidebar")).not.toHaveClass(/show/);
+    await page.getByRole("link", { name: "Ver detalhe" }).first().click();
     await expect(page).toHaveURL(/maquina.html/);
     await expect(
       page.getByRole("heading", { name: "Minha máquina", exact: true }),
@@ -161,12 +164,12 @@ test("navegação abre documentos próprios e preserva sessão ao recarregar", a
   page,
 }) => {
   await enter(page);
-  await page.getByRole("link", { name: "Minha máquina", exact: true }).click();
-  await expect(page).toHaveURL(/maquina.html$/);
+  await page.getByRole("link", { name: "Máquinas", exact: true }).click();
+  await expect(page).toHaveURL(/maquinas.html$/);
   await expect(
-    page.getByRole("link", { name: "Minha máquina", exact: true }),
+    page.getByRole("link", { name: "Máquinas", exact: true }),
   ).toHaveAttribute("aria-current", "page");
-  await expect(page.locator("#alerts-section")).toHaveCount(0);
+  await expect(page.locator("#machine-results")).toBeVisible();
   await page.getByRole("link", { name: "Alertas 1", exact: true }).click();
   await expect(page).toHaveURL(/alertas.html$/);
   await expect(page.locator("#machine-section")).toHaveCount(0);

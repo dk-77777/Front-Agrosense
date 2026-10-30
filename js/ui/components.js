@@ -22,6 +22,7 @@ export const escapeHTML = (value) =>
 export const brand = `<svg class="brand-mark" viewBox="0 0 36 40" fill="none" aria-hidden="true"><path d="M18 36V21M18 27C7 28 3 20 4 10c10-1 16 5 14 17ZM18 21C17 11 24 4 33 4c1 10-5 17-15 17Z" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AgroSense<span style="color:var(--color-brand)">.</span></span>`;
 export const statusBadge = (status) => {
   const values = {
+    unknown: ["question-circle", "Não determinada"],
     warning: ["exclamation-triangle", "Atenção"],
     normal: ["check-circle", "Normal"],
     offline: ["dash-circle", "Sem atualização"],
