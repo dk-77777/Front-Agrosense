@@ -258,3 +258,22 @@ section[id] {
     scroll-behavior: auto !important;
   }
 }
+
+.table {
+  --bs-table-color: var(--color-ink);
+  --bs-table-border-color: var(--color-border);
+  font-size: 13px;
+}
+.table thead th {
+  background: var(--color-canvas);
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 14px 12px;
+}
+.table tbody td {
+  padding: 14px 12px;
+}
+.btn-link {
+  color: var(--color-brand);
+}

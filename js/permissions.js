@@ -9,15 +9,22 @@ export const profiles = {
     createMachine: false,
     viewManagementIndicators: false,
     navigation: [
-      ["Painel", "#main", "grid"],
-      ["Minha máquina", "#machine-section", "machine"],
-      ["Alertas", "#alerts-section", "bell"],
+      ["Painel", "./index.html", "grid"],
+      ["Minha máquina", "./maquina.html", "machine"],
+      ["Alertas", "./alertas.html", "bell"],
     ],
   },
   TECHNICIAN: {
     label: "Técnico de manutenção",
-    available: false,
+    available: true,
     viewMachines: true,
+    viewFleet: true,
+    navigation: [
+      ["Painel", "./index.html", "grid"],
+      ["Máquinas", "./maquinas.html", "machine"],
+      ["Histórico", "./historico.html", "graph-up"],
+      ["Alertas", "./alertas.html", "bell"],
+    ],
     viewDetailedHistory: true,
     viewAlerts: true,
     acknowledgeAlert: true,
@@ -26,13 +33,26 @@ export const profiles = {
   },
   MANAGER: {
     label: "Gestor",
-    available: false,
+    available: true,
     viewMachines: true,
+    viewFleet: true,
+    navigation: [
+      ["Painel", "./index.html", "grid"],
+      ["Máquinas", "./maquinas.html", "machine"],
+      ["Histórico", "./historico.html", "graph-up"],
+      ["Alertas", "./alertas.html", "bell"],
+    ],
     viewDetailedHistory: true,
     viewAlerts: true,
     acknowledgeAlert: false,
     createMachine: false,
     viewManagementIndicators: true,
   },
+};
+profiles.ADMIN = {
+  ...profiles.TECHNICIAN,
+  label: "Administrador",
+  acknowledgeAlert: false,
+  createMachine: true,
 };
 export const can = (user, action) => profiles[user?.role]?.[action] === true;

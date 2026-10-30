@@ -35,7 +35,10 @@ for (const width of [390, 768, 1024, 1366, 1440, 1920]) {
     await page.getByRole("link", { name: "Minha máquina" }).click();
     if (width < 992)
       await expect(page.locator("#sidebar")).not.toHaveClass(/show/);
-    await expect(page.locator("#machine-section")).toBeInViewport();
+    await expect(page).toHaveURL(/maquina.html/);
+    await expect(
+      page.getByRole("heading", { name: "Minha máquina", exact: true }),
+    ).toBeVisible();
     await page
       .getByRole("button", { name: "Ver máquina", exact: true })
       .click();
@@ -54,10 +57,12 @@ for (const width of [390, 768, 1024, 1366, 1440, 1920]) {
 test("login, restrições de perfil e saída", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/login.html/);
-  await page.getByLabel("E-mail de demonstração").fill("tecnico@agrosense.com");
+  await page
+    .getByLabel("E-mail de demonstração")
+    .fill("inexistente@agrosense.com");
   await page.getByRole("button", { name: "Entrar na demonstração" }).click();
   await expect(page.getByRole("alert")).toContainText(
-    "outros perfis ainda não estão disponíveis",
+    "e-mails de demonstração",
   );
   await page
     .getByLabel("E-mail de demonstração")
@@ -150,4 +155,29 @@ test("dados corrompidos preservam texto e não sobrescrevem relatos", async ({
   expect(
     await page.evaluate(() => localStorage.getItem("agrosenseReports")),
   ).toBe("broken");
+});
+
+test("navegação abre documentos próprios e preserva sessão ao recarregar", async ({
+  page,
+}) => {
+  await enter(page);
+  await page.getByRole("link", { name: "Minha máquina", exact: true }).click();
+  await expect(page).toHaveURL(/maquina.html$/);
+  await expect(
+    page.getByRole("link", { name: "Minha máquina", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#alerts-section")).toHaveCount(0);
+  await page.getByRole("link", { name: "Alertas 1", exact: true }).click();
+  await expect(page).toHaveURL(/alertas.html$/);
+  await expect(page.locator("#machine-section")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Alertas", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/alertas.html$/);
+  await page.getByRole("link", { name: "Painel", exact: true }).click();
+  await expect(page).toHaveURL(/index.html$/);
+  await expect(
+    page.getByRole("heading", { name: "Visão da operação" }),
+  ).toBeVisible();
 });

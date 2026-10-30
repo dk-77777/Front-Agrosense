@@ -1,5 +1,11 @@
 export const users = [
   {
+    id: "USR-04",
+    name: "Rafael Augusto Silva",
+    email: "admin@agrosense.com",
+    role: "ADMIN",
+  },
+  {
     id: "USR-01",
     name: "João Silva",
     email: "operador@agrosense.com",

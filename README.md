@@ -25,9 +25,11 @@ Os arquivos de Bootstrap, Bootstrap Icons e Manrope estão incluídos em `assets
 - Sessão demonstrativa em `sessionStorage`, saída e restrições centralizadas.
 - Estados de carregamento, erro com nova tentativa, ausência de leituras e conexão offline.
 
-“Minha máquina” e “Alertas” levam às seções do painel. Não são páginas adicionais. O operador não reconhece nem encerra alertas, cadastra máquinas ou altera parâmetros.
+“Painel”, “Minha máquina” e “Alertas” abrem documentos próprios: `index.html`, `maquina.html` e `alertas.html`. A navegação preserva a sessão e identifica a página atual. O operador não reconhece nem encerra alertas, cadastra máquinas ou altera parâmetros.
 
-Os usuários técnico e gestor e sua matriz de permissões foram preparados em dados/configuração, mas o acesso a esses perfis está indisponível nesta etapa. Cadastro administrativo, indicadores e histórico detalhado não foram implementados.
+Os perfis técnico, gestor e administrador têm acesso demonstrativo: `tecnico@agrosense.com`, `gestor@agrosense.com`, `admin@agrosense.com`, todos sem senha. Técnico e gestor consultam máquinas e histórico; somente técnico reconhece alertas. Somente administrador cadastra máquinas. Operador continua limitado à sua máquina. Indicadores gerenciais avançados ainda não foram implementados.
+
+Telas das referências: `maquinas.html` (busca e situação), `historico.html` (máquina e datas), `alertas.html` (situação e máquina), `cadastro-maquina.html` (identificador único e situação), `alerta-reconhecido.html?id=ALT-001` (registro e observação após reconhecimento). Cadastros e reconhecimentos persistem em localStorage; não existe envio ao servidor. Recarregar preserva os registros.
 
 ## Dados e integração
 
@@ -59,7 +61,7 @@ npm test
 
 O Playwright inicia e encerra seu próprio servidor. Usa Chromium em `/usr/bin/chromium`; em outra máquina, defina `CHROMIUM_PATH` com o caminho do Chromium instalado. No ambiente de nuvem, servidor e navegador precisam da execução com acesso a sockets, fora do sandbox restrito.
 
-Foram executados **12 testes**, todos aprovados, cobrindo login/saída, restrições do operador, modais/teclado, menu mobile, relato/persistência/escape de HTML, erro/recuperação, dados vazios, offline e preservação de armazenamento inválido. Os testes responsivos verificam ausência de overflow e erros no console em **390, 768, 1024, 1366, 1440 e 1920 px**. O axe não encontrou violações automatizadas WCAG A/AA nas telas de acesso, painel e formulário; isso não substitui uma auditoria completa com tecnologias assistivas.
+Foram executados **22 testes**, todos aprovados, cobrindo login/saída, restrições do operador, modais/teclado, menu mobile, relato/persistência/escape de HTML, erro/recuperação, dados vazios, offline e preservação de armazenamento inválido. Os testes responsivos verificam ausência de overflow e erros no console em **390, 768, 1024, 1366, 1440 e 1920 px**. O axe não encontrou violações automatizadas WCAG A/AA nas telas de acesso, painel e formulário; isso não substitui uma auditoria completa com tecnologias assistivas.
 
 Screenshots por tamanho são geradas em `test-results/operator-*.png`; relatório navegável em `playwright-report/index.html`. Foram inspecionadas as capturas desktop e mobile. Não há build ou typecheck aplicável à stack escolhida.
 
@@ -69,7 +71,7 @@ Screenshots por tamanho são geradas em `test-results/operator-*.png`; relatóri
 
 O proxy bloqueou a consulta ao Figma com HTTP 403. Portanto, os frames, a tela original de acesso e os estados do protótipo **não foram inspecionados**. Esta implementação usa os tokens, tipografia, sidebar de 230 px e conteúdo fornecidos no briefing. A composição e o símbolo da marca são provisórios: a fidelidade visual precisa ser comparada ao frame ou a uma exportação fornecida pelo responsável antes da aprovação final de design. Nenhuma pesquisa externa de referências foi alegada.
 
-Próximas etapas, separadas desta entrega: comparação com o Figma acessível; telas e fluxos de técnico/gestor; integração backend e autenticação real.
+As cinco capturas fornecidas pelo usuário orientam a hierarquia, disposição dos formulários, tabelas e telas de reconhecimento. Acesso direto ao Figma continua não verificado. Próximas etapas: indicadores gerenciais avançados, integração backend e autenticação real.
 
 ## Ambiente na nuvem
 

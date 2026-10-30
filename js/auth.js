@@ -14,7 +14,7 @@ export function login(email) {
   const user = users.find((u) => u.email === email.trim().toLowerCase());
   if (!user || !profiles[user.role]?.available)
     throw new Error(
-      "Nesta etapa, use operador@agrosense.com. Os outros perfis ainda não estão disponíveis.",
+      "Use um dos e-mails de demonstração informados na tela de acesso.",
     );
   sessionStorage.setItem("agrosenseUser", JSON.stringify(user));
   return user;

@@ -1,3 +1,4 @@
+import { presentPage } from "./pages.js";
 import { temperatureChart } from "./ui/chart.js";
 import { getUser } from "./auth.js";
 import { profiles, can } from "./permissions.js";
@@ -7,9 +8,18 @@ import { getReadings } from "./data/mock-readings.js";
 import { renderNavigation } from "./navigation.js";
 import { renderDashboard } from "./dashboard.js";
 import { setupReports } from "./reports.js";
+import { initWorkspace } from "./workspace.js";
 const user = getUser();
 if (!user || !profiles[user.role]?.available) location.replace("./login.html");
-else {
+else if (can(user, "viewFleet")) {
+  initWorkspace(user);
+} else if (
+  !["", "index.html", "maquina.html", "alertas.html"].includes(
+    location.pathname.split("/").pop(),
+  )
+) {
+  location.replace("./index.html");
+} else {
   const machine = machines.find((m) => m.id === user.machineId);
   const machineAlerts = can(user, "viewAlerts")
     ? alerts.filter((a) => a.machineId === user.machineId)
@@ -35,6 +45,7 @@ else {
       try {
         currentReadings = await getReadings();
         renderDashboard(machine, machineAlerts, currentReadings);
+        presentPage();
       } catch {
         dashboard.setAttribute("aria-busy", "false");
         dashboard.innerHTML =
