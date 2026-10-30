@@ -4,12 +4,14 @@ import { machineState } from "../data/condition.js";
 import { can } from "../permissions.js";
 import { esc, detailLink, statusBadge, empty } from "./shared.js";
 const cards = (items) =>
-  `<div class="row g-3">${items.map(([label, n]) => `<div class="col-sm-6 col-xl-3"><section class="panel h-100"><h2>${label}</h2><p class="sensor-value">${n}</p></section></div>`).join("")}</div>`;
+  `<div class="row g-3">${items.map(([label, n], index) => `<div class="col-sm-6 col-xl-3"><section class="panel metric-panel h-100 ${label.includes("atenção") ? "metric-warning" : ""}"><div class="metric-label"><h2>${label}</h2><i class="bi bi-${label.includes("Usuários") ? "people" : label.includes("inativas") ? "pause-circle" : label.includes("atenção") ? "exclamation-triangle" : label.includes("Normais") ? "check-circle" : label.includes("atualização") ? "clock" : "grid-1x2"}" aria-hidden="true"></i></div><p class="sensor-value">${n}</p><span class="metric-context">${label.includes("Usuários") ? "Cadastro de acessos" : "Equipamentos da unidade"}</span></section></div>`).join("")}</div>`;
 export function overview(root, user) {
+  root.classList.add("overview-grid");
   const all = getMachines(),
     active = all.filter((m) => m.active !== false),
     alerts = getAlerts();
   if (can(user, "manageUsers")) {
+    root.classList.add("overview-admin");
     const users = getUsers();
     root.innerHTML =
       cards([
@@ -18,7 +20,7 @@ export function overview(root, user) {
         ["Usuários ativos", users.filter((u) => u.active !== false).length],
         ["Usuários inativos", users.filter((u) => u.active === false).length],
       ]) +
-      '<section class="panel mt-4"><h2>Gestão de cadastros</h2><p class="muted my-3">Mantenha equipamentos e acessos organizados. A inativação preserva os registros históricos.</p><a class="btn btn-primary" href="./maquinas.html">Gerenciar máquinas</a> <a class="btn btn-outline-secondary" href="./usuarios.html">Gerenciar usuários</a></section>';
+      '<section class="panel mt-4"><h2>Gestão de cadastros</h2><p class="muted my-3">Mantenha equipamentos e acessos organizados. A inativação preserva os registros históricos.</p><div class="admin-actions"><a href="./maquinas.html"><i class="bi bi-gear-wide-connected" aria-hidden="true"></i><span><strong>Gerenciar máquinas</strong><small>Cadastre, edite e organize os equipamentos.</small></span><i class="bi bi-arrow-right" aria-hidden="true"></i></a><a href="./usuarios.html"><i class="bi bi-people" aria-hidden="true"></i><span><strong>Gerenciar usuários</strong><small>Controle os perfis e acessos da equipe.</small></span><i class="bi bi-arrow-right" aria-hidden="true"></i></a></div></section>';
     return;
   }
   const normal = active.filter((m) => {
@@ -43,7 +45,7 @@ export function overview(root, user) {
       priorities
         .map((m) => {
           const s = machineState(m);
-          return `<div class="d-flex flex-wrap gap-3 justify-content-between border-bottom py-3"><a href="${detailLink(m.id)}">${esc(m.id)} · ${esc(m.name)}</a><span class="d-flex gap-2 flex-wrap align-items-center">${s.condition === "unknown" ? "Condição não determinada" : statusBadge(s.condition)} · ${s.communication} · ${s.analysisLabel}</span></div>`;
+          return `<div class="priority-row"><a href="${detailLink(m.id)}">${esc(m.id)} · ${esc(m.name)}</a><span class="priority-state">${s.condition === "unknown" ? "Condição não determinada" : statusBadge(s.condition)} · ${s.communication} · ${s.analysisLabel}</span></div>`;
         })
         .join("") || empty("Nenhuma prioridade identificada.")
     }</section><section class="panel mt-4"><h2>Ocorrências da amostra</h2><p class="muted mt-2">19/10/2026 · conjunto demonstrativo. Reconhecimento registra visualização, sem encerrar a ocorrência.</p><div class="d-flex flex-wrap gap-4 mt-3"><span>Abertas: <strong>${alerts.filter((a) => a.status === "Aberto").length}</strong></span><span>Reconhecidas, ainda em acompanhamento: <strong>${alerts.filter((a) => a.status === "Reconhecido").length}</strong></span><span>Encerradas: <strong>${alerts.filter((a) => a.status === "Encerrado").length}</strong></span></div><a href="./alertas.html" class="btn btn-outline-secondary mt-3">Consultar ocorrências</a></section>`,

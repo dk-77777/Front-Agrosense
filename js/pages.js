@@ -9,11 +9,6 @@ export function presentPage() {
   } else if (page === "maquina.html") {
     dashboard.querySelector(".attention-banner")?.remove();
     dashboard.querySelector("#alerts-section")?.remove();
-    const detail = document.createElement("section");
-    detail.className = "panel mt-4";
-    detail.setAttribute("aria-label", "Detalhes do equipamento");
-    detail.innerHTML = document.getElementById("machine-detail").innerHTML;
-    dashboard.append(detail);
   } else {
     const link = dashboard.querySelector(".operation-panel button");
     if (link) {

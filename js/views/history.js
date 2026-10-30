@@ -1,5 +1,5 @@
 import { getMachines } from "../data/store.js";
-import { getReadings } from "../data/mock-readings.js";
+import { getReadings, readingsForMachine } from "../data/mock-readings.js";
 import { temperatureChart } from "../ui/chart.js";
 import { esc, format, table, empty } from "./shared.js";
 export async function historyView(root) {
@@ -21,13 +21,10 @@ export async function historyView(root) {
     const machine = machines.find(
       (m) => m.id === root.querySelector("select").value,
     );
-    const filtered =
-      machine.id === "AG-001"
-        ? points.filter((p) => {
-            const date = new Date("2026-10-19T" + p.time);
-            return date >= start && date <= end;
-          })
-        : [];
+    const filtered = readingsForMachine(machine, points).filter((p) => {
+      const date = new Date("2026-10-19T" + p.time);
+      return date >= start && date <= end;
+    });
     const url = new URL(location.href);
     url.searchParams.set("machine", machine.id);
     history.replaceState(null, "", url);
@@ -39,7 +36,7 @@ export async function historyView(root) {
           .reverse()
           .map(
             (p) =>
-              `<tr><td>19/10 · ${esc(p.time)}</td><td>${format(p.temperature)} °C</td><td>1.500 rpm</td><td>40,0 N m</td><td>${p.temperature >= 36 ? "Atenção" : "Normal"}</td></tr>`,
+              `<tr><td>19/10 · ${esc(p.time)}</td><td>${format(p.temperature)} °C</td><td>${format(machine.rotation, 0)} rpm</td><td>${format(machine.torque)} N m</td><td>${p.temperature >= 36 ? "Atenção" : "Normal"}</td></tr>`,
           )
           .join(""),
       )}<p class="small-text muted">${filtered.length} registros simulados encontrados.</p></section>`;

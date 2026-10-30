@@ -277,3 +277,67 @@ section[id] {
 .btn-link {
   color: var(--color-brand);
 }
+
+.save-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--color-green-tint);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-brand);
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  color: var(--color-deep);
+}
+.table-responsive:focus-visible {
+  outline: 3px solid var(--color-brand);
+  outline-offset: 3px;
+}
+.form-select {
+  font: inherit;
+  min-height: 44px;
+  border-color: var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-ink);
+}
+.form-select:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px #17664d20;
+}
+.demo-profiles {
+  margin-bottom: 24px;
+}
+.demo-profiles legend {
+  font-size: 12px;
+  color: var(--color-muted);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.demo-profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.demo-profile-grid button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: white;
+  color: var(--color-ink);
+  font-size: 12px;
+  min-height: 48px;
+  text-align: left;
+}
+.demo-profile-grid button[aria-pressed="true"] {
+  background: var(--color-green-tint);
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+.demo-profile-grid button:hover {
+  border-color: var(--color-brand);
+}

@@ -8,7 +8,7 @@ import { historyView } from "./views/history.js";
 import { alertsView, recognizedView } from "./views/alerts.js";
 import { esc, empty, statusBadge, detailLink } from "./views/shared.js";
 import { renderDashboard } from "./dashboard.js";
-import { getReadings } from "./data/mock-readings.js";
+import { getReadings, readingsForMachine } from "./data/mock-readings.js";
 export async function initWorkspace(user) {
   const root = document.getElementById("dashboard"),
     page = location.pathname.split("/").pop() || "index.html";
@@ -111,12 +111,7 @@ export async function initWorkspace(user) {
       renderDashboard(
         machine,
         getAlerts().filter((a) => a.machineId === machine.id),
-        machine.status !== "offline"
-          ? (await getReadings()).map((p) => ({
-              ...p,
-              temperature: p.temperature - 37 + machine.temperature,
-            }))
-          : [],
+        readingsForMachine(machine, await getReadings()),
       );
       root.querySelector("#alerts-section")?.remove();
       root.querySelector(".attention-banner")?.remove();

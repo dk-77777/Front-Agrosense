@@ -41,6 +41,40 @@
           <span class="badge-status normal">AMBIENTE DEMONSTRATIVO</span>
           <h1>Acesse sua operação</h1>
           <p class="muted">Explore o painel do operador com dados simulados.</p>
+          <fieldset class="demo-profiles">
+            <legend>Escolha um perfil para explorar</legend>
+            <div class="demo-profile-grid">
+              <button
+                type="button"
+                data-demo-email="operador@agrosense.com"
+                aria-pressed="true"
+              >
+                <i class="bi bi-gear-wide-connected" aria-hidden="true"></i
+                ><span>Operador</span></button
+              ><button
+                type="button"
+                data-demo-email="tecnico@agrosense.com"
+                aria-pressed="false"
+              >
+                <i class="bi bi-tools" aria-hidden="true"></i
+                ><span>Técnico</span></button
+              ><button
+                type="button"
+                data-demo-email="gestor@agrosense.com"
+                aria-pressed="false"
+              >
+                <i class="bi bi-bar-chart" aria-hidden="true"></i
+                ><span>Gestor</span></button
+              ><button
+                type="button"
+                data-demo-email="admin@agrosense.com"
+                aria-pressed="false"
+              >
+                <i class="bi bi-people" aria-hidden="true"></i
+                ><span>Administrador</span>
+              </button>
+            </div>
+          </fieldset>
           <label class="form-label" for="email">E-mail de demonstração</label
           ><input
             class="form-control"

@@ -1,3 +1,4 @@
+import { confirmInactivation, saveFeedback } from "../ui/feedback.js";
 import { machineState } from "../data/condition.js";
 import { getMachines, addMachine, updateMachine } from "../data/store.js";
 import { can } from "../permissions.js";
@@ -61,7 +62,7 @@ export function createView(root, user) {
     ).checked = true;
     document.querySelector("h1").textContent = "Editar máquina";
   }
-  root.querySelector("form").addEventListener("submit", (event) => {
+  root.querySelector("form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!can(user, "createMachine")) return;
     try {
@@ -73,7 +74,7 @@ export function createView(root, user) {
       if (
         old?.active !== false &&
         !active &&
-        !confirm("Inativar esta máquina? O histórico será preservado.")
+        !(await confirmInactivation(`a máquina ${old?.name ?? name}`))
       )
         return;
       if (old) {
@@ -85,6 +86,9 @@ export function createView(root, user) {
             active,
           },
           user,
+        );
+        saveFeedback(
+          "Cadastro salvo neste navegador. Nenhum dado foi enviado ao servidor.",
         );
         location.assign("./maquinas.html");
         return;
@@ -100,6 +104,9 @@ export function createView(root, user) {
         sector: "Não informado",
         lastCommunicationMinutes: Infinity,
       });
+      saveFeedback(
+        "Cadastro salvo neste navegador. Nenhum dado foi enviado ao servidor.",
+      );
       location.assign("./maquinas.html");
     } catch (e) {
       root.querySelector("#save-error").textContent = e.message;

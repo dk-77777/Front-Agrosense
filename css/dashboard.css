@@ -237,3 +237,199 @@
   font-size: 11px;
   color: var(--color-muted);
 }
+
+/* Shared visual hierarchy for fleet and administration dashboards. */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.overview-grid > .row {
+  grid-column: 1/-1;
+}
+.overview-grid > .panel {
+  margin-top: 0 !important;
+  height: 100%;
+}
+.metric-panel {
+  position: relative;
+  min-height: 166px;
+  padding: 22px 24px;
+}
+.metric-label {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.metric-label h2 {
+  font-size: 12px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--color-muted);
+  font-weight: 600;
+  min-height: 38px;
+}
+.metric-label .bi {
+  color: var(--color-brand);
+  font-size: 17px;
+  padding: 5px 8px;
+  background: var(--color-green-tint);
+  border-radius: 6px;
+}
+.metric-panel .sensor-value {
+  margin-top: 10px;
+  font-size: 36px;
+  line-height: 1.2;
+}
+.metric-context {
+  display: block;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+.metric-warning .metric-label .bi {
+  background: var(--color-warning-tint);
+  color: var(--color-warning);
+}
+.metric-warning .sensor-value {
+  color: var(--color-warning);
+}
+.priority-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.priority-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.priority-row > a {
+  font-weight: 600;
+  text-decoration: none;
+}
+.priority-row > a:hover {
+  text-decoration: underline;
+}
+.priority-state {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.overview-grid .progress {
+  height: 8px;
+  background: var(--color-neutral-tint);
+}
+@media (max-width: 1199px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .overview-grid > .row {
+    grid-column: auto;
+  }
+}
+@media (max-width: 575px) {
+  .metric-panel {
+    min-height: 150px;
+  }
+  .metric-label h2 {
+    min-height: 0;
+  }
+  .overview-grid {
+    gap: 16px;
+  }
+}
+/* Operational filters remain grouped and readable across pages. */
+#dashboard > .d-flex[role="group"] {
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  align-items: center;
+}
+#dashboard > .d-flex[role="group"] label:not(.visually-hidden) {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.metric-context {
+  line-height: 1.6;
+}
+@media (max-width: 575px) {
+  #dashboard > .d-flex[role="group"] .form-control,
+  #dashboard > .d-flex[role="group"] .form-select {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+  .table td .btn {
+    white-space: nowrap;
+  }
+  .sensor-chart text {
+    font-weight: 600;
+  }
+}
+.overview-admin > .panel {
+  grid-column: 1/-1;
+}
+.admin-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+.admin-actions > a {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--color-ink);
+}
+.admin-actions > a:hover {
+  border-color: var(--color-brand);
+  background: var(--color-green-tint);
+}
+.admin-actions > a > .bi:first-child {
+  font-size: 22px;
+  color: var(--color-brand);
+}
+.admin-actions > a > .bi:last-child {
+  margin-left: auto;
+  color: var(--color-brand);
+}
+.admin-actions strong {
+  display: block;
+  font-size: 14px;
+}
+.admin-actions small {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.table-scroll-hint {
+  display: none;
+}
+@media (max-width: 767px) {
+  .admin-actions {
+    grid-template-columns: 1fr;
+  }
+  .table-scroll-hint {
+    display: block;
+    font-size: 11px;
+    color: var(--color-muted);
+    margin-bottom: 12px;
+  }
+}
+.admin-actions > a:hover small,
+.admin-actions > a:focus-visible small {
+  color: var(--color-deep);
+}

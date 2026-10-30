@@ -32,11 +32,18 @@ test("máquina edita, confirma inativação e preserva registros", async ({
   await expect(page.getByLabel("Identificador único")).toHaveValue("AG-001");
   await page.getByLabel("Nome da máquina").fill("Moagem revisada");
   await page.getByLabel("Inativa", { exact: true }).check();
-  page.once("dialog", (d) => d.dismiss());
+
   await page.getByRole("button", { name: "Salvar máquina" }).click();
+  await expect(
+    page.getByRole("button", { name: "Manter ativo" }),
+  ).toBeFocused();
+  await page.getByRole("button", { name: "Manter ativo" }).click();
   await expect(page).toHaveURL(/cadastro-maquina/);
-  page.once("dialog", (d) => d.accept());
+
   await page.getByRole("button", { name: "Salvar máquina" }).click();
+  await page
+    .getByRole("button", { name: "Confirmar inativação", exact: true })
+    .click();
   await expect(
     page.getByText("AG-001 · Moagem revisada · Inativa"),
   ).toBeVisible();
@@ -56,8 +63,11 @@ test("usuário cria, edita perfil e inativa sem excluir", async ({ page }) => {
   await expect(row).toContainText("Gestor");
   await row.getByRole("link", { name: "Editar usuário" }).click();
   await page.getByLabel("Usuário ativo").uncheck();
-  page.once("dialog", (d) => d.accept());
+
   await page.getByRole("button", { name: "Salvar usuário" }).click();
+  await page
+    .getByRole("button", { name: "Confirmar inativação", exact: true })
+    .click();
   await expect(
     page.getByRole("row").filter({ hasText: "teste@agrosense.com" }),
   ).toContainText("Inativo");

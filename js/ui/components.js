@@ -42,8 +42,9 @@ export function sensorCard({
   symbol,
   note,
   warning = false,
+  neutral = false,
 }) {
-  return `<div class="col-12 col-sm-6 col-xl-4"><article class="panel sensor-card"><div class="sensor-heading"><h3>${label}</h3>${icon(symbol)}</div><p class="sensor-value">${value}<span>${unit}</span></p><p class="sensor-foot ${warning ? "warning-value" : ""}">${icon(warning ? "exclamation-circle" : "check-circle")}${note}</p></article></div>`;
+  return `<div class="col-12 col-sm-6 col-xl-4"><article class="panel sensor-card"><div class="sensor-heading"><h3>${label}</h3>${icon(symbol)}</div><p class="sensor-value">${value}<span>${unit}</span></p><p class="sensor-foot ${warning ? "warning-value" : ""}">${icon(neutral ? "info-circle" : warning ? "exclamation-circle" : "check-circle")}${note}</p></article></div>`;
 }
 export function notify(message) {
   document.getElementById("toast-message").textContent = message;

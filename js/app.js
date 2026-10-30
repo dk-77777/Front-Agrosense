@@ -4,7 +4,7 @@ import { getUser } from "./auth.js";
 import { profiles, can } from "./permissions.js";
 import { getMachines, getAlerts } from "./data/store.js";
 
-import { getReadings } from "./data/mock-readings.js";
+import { getReadings, readingsForMachine } from "./data/mock-readings.js";
 import { renderNavigation } from "./navigation.js";
 import { renderDashboard } from "./dashboard.js";
 import { setupReports } from "./reports.js";
@@ -58,7 +58,7 @@ else if (
       dashboard.innerHTML =
         '<div class="loading-state" role="status"><span class="spinner-border spinner-border-sm mx-auto" aria-hidden="true"></span>Carregando leituras da operação…</div>';
       try {
-        currentReadings = await getReadings();
+        currentReadings = readingsForMachine(machine, await getReadings());
         renderDashboard(machine, machineAlerts, currentReadings);
         presentPage();
       } catch {

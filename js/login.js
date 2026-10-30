@@ -12,3 +12,14 @@ document.getElementById("login-form").addEventListener("submit", (event) => {
     message.textContent = error.message;
   }
 });
+
+document.querySelectorAll("[data-demo-email]").forEach((button) =>
+  button.addEventListener("click", () => {
+    document.getElementById("email").value = button.dataset.demoEmail;
+    document
+      .querySelectorAll("[data-demo-email]")
+      .forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+    document.getElementById("login-error").hidden = true;
+    document.querySelector("#login-form button[type=submit]").focus();
+  }),
+);

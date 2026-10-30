@@ -14,3 +14,17 @@ export async function getReadings() {
     throw new Error("Formato de leitura inválido.");
   return readings;
 }
+
+// Explicitly simulated series for the five seeded machines; new registrations
+// have no samples. This is a fixture, not a production analysis rule.
+export function readingsForMachine(machine, series) {
+  if (!/^AG-00[1-5]$/.test(machine.id) || !Number.isFinite(machine.temperature))
+    return [];
+  return series
+    .filter((p) => machine.status !== "offline" || p.time <= "10:18")
+    .map((p) => ({
+      ...p,
+      temperature:
+        Math.round((p.temperature - 37 + machine.temperature) * 10) / 10,
+    }));
+}

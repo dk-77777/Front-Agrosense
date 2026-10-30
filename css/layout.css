@@ -266,3 +266,26 @@
   margin-top: 24px;
   font-size: 12px;
 }
+
+.sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.sidebar-brand,
+.workspace-tag,
+.side-nav,
+.sidebar-bottom {
+  flex-shrink: 0;
+}
+@media (max-height: 760px) {
+  .sidebar-brand {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+  .workspace-tag {
+    margin-bottom: 20px;
+  }
+  .sidebar-bottom .demo-note {
+    display: none;
+  }
+}
