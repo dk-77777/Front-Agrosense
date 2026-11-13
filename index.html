@@ -1,238 +1,557 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#17664d" />
-    <meta
-      name="description"
-      content="AgroSense: acompanhe a condição e as leituras da sua máquina."
-    />
-    <title>Visão da operação · AgroSense</title>
-    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/vendor/bootstrap.min.css" />
-    <link rel="stylesheet" href="assets/vendor/bootstrap-icons.css" />
-    <link rel="stylesheet" href="css/tokens.css" />
-    <link rel="stylesheet" href="css/base.css" />
-    <link rel="stylesheet" href="css/layout.css" />
-    <link rel="stylesheet" href="css/dashboard.css" />
-    <link rel="stylesheet" href="css/responsive.css" />
-  </head>
-  <body>
-    <a class="skip-link" href="#main">Pular para o conteúdo</a>
-    <aside
-      class="sidebar offcanvas-lg offcanvas-start"
-      tabindex="-1"
-      id="sidebar"
-      aria-label="Menu principal"
-    ></aside>
-    <div class="shell">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#197f10">
+  <title>AgroSense</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="js/demo-auth.js"></script>
+  <script>if (!window.AgroSenseAuth.session()) location.replace('login.html');</script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/premium.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">AgroSense</div>
+      <nav class="main-nav" aria-label="Menu principal">
+        <a v-for="item in menu" :key="item.label"
+           href="#" class="nav-item" :class="{ active: activeMenu === item.label }"
+           @click.prevent="goMenu(item.label)">
+          <span class="nav-icon" v-html="item.icon"></span>
+          <span>{{ item.label }}</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="#">Facebook</a><a href="#">Twitter</a><a href="#">Google</a>
+      </div>
+    </aside>
+
+    <main class="main-panel">
       <header class="topbar">
-        <div class="topbar-left">
-          <button
-            class="icon-button mobile-menu"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#sidebar"
-            aria-controls="sidebar"
-            aria-label="Abrir menu"
-          >
-            <i class="bi bi-list" aria-hidden="true"></i></button
-          ><a
-            class="brand mobile-brand"
-            id="mobile-brand"
-            href="./index.html"
-            aria-label="AgroSense, painel"
-          ></a>
-          <div class="breadcrumb-text">
-            Operação <i class="bi bi-chevron-right" aria-hidden="true"></i>
-            <strong>Painel</strong>
-          </div>
+        <div v-if="activeMenu === 'Máquinas' && currentMachine">
+          <button type="button" class="back-link" @click="backToList"><span aria-hidden="true">‹</span> Máquinas</button>
+          <h1>{{ currentMachine.id }} - {{ currentMachine.name }}</h1>
+          <p class="subtitle detail-sub">
+            <span>{{ currentMachine.setor }}</span>
+            <span class="status-pill" :class="evaluations[currentMachine.id].status">{{ evaluations[currentMachine.id].label }}</span>
+          </p>
         </div>
-        <div class="topbar-right">
-          <span class="demo-pill"
-            ><i class="bi bi-circle-half" aria-hidden="true"></i> Demonstração ·
-            dados simulados</span
-          ><span class="avatar" aria-hidden="true">JS</span>
+        <div v-else>
+          <h1>{{ activeMenu }}</h1>
+          <p class="subtitle">{{ pageSubtitle }}</p>
+        </div>
+        <div class="top-actions">
+          <div class="notification-area" ref="notificationArea">
+            <button type="button" class="icon-button notification" data-tooltip="Notificações" :aria-label="'Notificações: ' + unreadAlerts + ' não lidas'"
+                    :aria-expanded="notice" aria-controls="notification-center" @click.stop="toggleNotice">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+              <Transition name="ag-badge">
+                <span v-if="unreadAlerts" :key="unreadAlerts" class="notification-count" aria-hidden="true">{{ unreadAlerts > 99 ? '99+' : unreadAlerts }}</span>
+              </Transition>
+            </button>
+            <Transition name="ag-popover">
+              <section v-if="notice" id="notification-center" class="notice-popover" aria-label="Central de notificações" @click.stop>
+                <div class="notice-head">
+                  <div><h2>Notificações</h2><p>{{ alertCount }} {{ alertCount === 1 ? 'alerta ativo' : 'alertas ativos' }} · dados simulados</p></div>
+                  <button type="button" class="notice-close" aria-label="Fechar notificações" @click="notice = false">×</button>
+                </div>
+                <div class="notice-toolbar" v-if="unreadAlerts">
+                  <button type="button" @click="markAllAlertsRead">Marcar todas como lidas</button>
+                </div>
+                <TransitionGroup v-if="attentionList.length" name="ag-list" tag="ul" class="notice-list">
+                  <li v-for="row in attentionList" :key="row.m.id" :class="{ 'is-read': isAlertRead(row) }">
+                    <button type="button" class="notice-item" @click="openAlert(row)">
+                      <span class="notice-severity" :class="row.ev.status"></span>
+                      <span class="notice-item-content"><strong>{{ row.m.id }} · {{ row.m.name }}</strong>
+                        <small>{{ row.m.setor }} · {{ row.ev.label }}</small>
+                        <span>{{ row.ev.issues[0].text }}</span>
+                      </span>
+                      <span class="notice-chevron" aria-hidden="true">›</span>
+                    </button>
+                  </li>
+                </TransitionGroup>
+                <div v-else class="notice-empty"><span class="notice-empty-icon" aria-hidden="true">✓</span><strong>Tudo em ordem</strong><p>Nenhuma máquina com alerta no momento.</p></div>
+              </section>
+            </Transition>
+          </div>
+          <button v-if="activeMenu === 'Máquinas' && !currentMachine" type="button" class="icon-button" data-tooltip="Pesquisar" aria-label="Pesquisar máquinas"
+                  :aria-expanded="showSearch" aria-controls="machine-search" @click="toggleSearch">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"/><path d="m16 16 4.5 4.5"/></svg>
+          </button>
+          <div class="profile-area" ref="profileArea">
+            <button type="button" class="profile" :aria-expanded="profileOpen" aria-controls="profile-info" @click.stop="toggleProfile"
+                    aria-label="Informações da conta"><span>{{ userInitials }}</span><b aria-hidden="true">⌄</b></button>
+            <Transition name="ag-popover">
+              <section v-if="profileOpen" id="profile-info" class="profile-popover" aria-label="Informações da demonstração" @click.stop>
+                <strong>{{ currentUser.nome }}</strong><span>{{ userProfileLabel }} · Demonstração</span>
+                <p>Acesso local demonstrativo; as permissões não são aplicadas por um servidor.</p>
+                <button type="button" class="ag-signout" @click="logout">Sair da conta <span aria-hidden="true">↗</span></button>
+              </section>
+            </Transition>
+          </div>
         </div>
       </header>
-      <div id="connection-message" class="offline-message" role="status" hidden>
-        <i class="bi bi-wifi-off" aria-hidden="true"></i> Sem conexão. As
-        leituras exibidas são demonstrativas; seus relatos permanecem neste
-        navegador.
-      </div>
-      <main id="main" class="content" tabindex="-1">
-        <header class="page-header">
-          <div>
-            <p class="eyebrow">PAINEL DO OPERADOR</p>
-            <h1>Visão da operação</h1>
-            <p>Acompanhe a condição atual do equipamento.</p>
-          </div>
-          <button
-            class="btn btn-outline-secondary"
-            data-bs-toggle="modal"
-            data-bs-target="#report-modal"
-          >
-            <i class="bi bi-chat-left-text" aria-hidden="true"></i> Reportar
-            problema
-          </button>
-        </header>
-        <div id="dashboard" aria-busy="true">
-          <div class="loading-state" role="status">
-            <span
-              class="spinner-border spinner-border-sm mx-auto"
-              aria-hidden="true"
-            ></span
-            >Carregando leituras da operação…
-          </div>
+
+      <Transition name="ag-panel">
+        <div v-if="showSearch && activeMenu === 'Máquinas' && !currentMachine" id="machine-search" class="search-wrap">
+          <input ref="searchInput" v-model="search" type="search" aria-label="Buscar máquinas" placeholder="Buscar por número, máquina ou setor...">
         </div>
-        <footer class="page-footer">
-          <span>AgroSense · Inteligência para sua operação.</span
-          ><span>Dados de demonstração. Sem conexão com sensores reais.</span>
-        </footer>
-      </main>
-    </div>
-    <div
-      class="modal fade"
-      id="machine-modal"
-      tabindex="-1"
-      aria-labelledby="machine-title"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 id="machine-title" class="modal-title">Detalhes da máquina</h2>
-            <button
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fechar detalhes"
-            ></button>
+      </Transition>
+
+      <!-- ========== Dashboard ========== -->
+      <div v-if="activeMenu === 'Dashboard'" class="dashboard-view">
+        <section class="fleet-strip" aria-label="Situação da frota">
+          <div class="fleet-stat"><b v-number-pop="counts.total">{{ counts.total }}</b><span>Máquinas</span></div>
+          <div class="fleet-stat ok"><b v-number-pop="counts.ok">{{ counts.ok }}</b><span>Normais</span></div>
+          <div class="fleet-stat warn"><b v-number-pop="counts.warn">{{ counts.warn }}</b><span>Em atenção</span></div>
+          <div class="fleet-stat crit"><b v-number-pop="counts.crit">{{ counts.crit }}</b><span>Críticas</span></div>
+        </section>
+
+        <div class="dash-grid">
+          <section class="panel">
+            <h2>Precisam de atenção</h2>
+            <ul v-if="attentionList.length" class="attn-list">
+              <li v-for="row in attentionList" :key="row.m.id">
+                <button type="button" class="attn-row" @click="openMachineById(row.m.id)">
+                  <span class="attn-dot" :class="row.ev.status"></span>
+                  <span class="attn-main"><b>{{ row.m.id }}</b> {{ row.m.name }}<small>{{ row.m.setor }}</small></span>
+                  <span class="attn-text">{{ row.ev.issues[0].text }}<span v-if="row.ev.issues.length > 1"> (mais {{ row.ev.issues.length - 1 }})</span></span>
+                  <span class="go" aria-hidden="true">›</span>
+                </button>
+              </li>
+            </ul>
+            <p v-else class="no-issue">Nenhuma máquina com alerta agora.</p>
+          </section>
+
+          <section class="panel">
+            <h2>Por setor</h2>
+            <ul v-if="sectorRows.length" class="sector-list">
+              <li v-for="row in sectorRows" :key="row.s.nome" class="sector-row">
+                <div class="sector-top">
+                  <b>{{ row.s.nome }}</b>
+                  <span>{{ row.total }} {{ row.total === 1 ? 'máquina' : 'máquinas' }}</span>
+                </div>
+                <template v-if="row.total">
+                  <div class="sector-bar" role="img" :aria-label="row.ok + ' normais, ' + row.warn + ' em atenção, ' + row.crit + ' críticas'">
+                    <i class="seg ok" :style="{ width: row.pct.ok + '%' }"></i><i class="seg warn" :style="{ width: row.pct.warn + '%' }"></i><i class="seg crit" :style="{ width: row.pct.crit + '%' }"></i>
+                  </div>
+                  <small>{{ row.ok }} normais, {{ row.warn }} em atenção, {{ row.crit }} críticas</small>
+                </template>
+                <small v-else>Sem máquinas cadastradas.</small>
+              </li>
+            </ul>
+            <p v-else class="no-issue">Nenhum setor cadastrado. Adicione um em Cadastro.</p>
+          </section>
+        </div>
+
+        <section class="panel chart-panel">
+          <div class="chart-head">
+            <h2>Média da frota nos últimos 80 segundos</h2>
+            <div class="tabs chart-tabs">
+              <button v-for="t in chartTabs" :key="t.key" :class="{ selected: chartKey === t.key }" @click="chartKey = t.key">{{ t.label }}</button>
+            </div>
           </div>
-          <div id="machine-detail" class="modal-body"></div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
-              Fechar
-            </button>
+          <div v-if="chart.lines.length" class="chart-body">
+            <div class="chart-y">
+              <span>{{ fmt(chart.max, chartMeta.digits) }}</span>
+              <span>{{ fmt(chart.mid, chartMeta.digits) }}</span>
+              <span>{{ fmt(chart.min, chartMeta.digits) }}</span>
+            </div>
+            <svg class="chart-svg" viewBox="0 0 600 170" preserveAspectRatio="none" role="img" :aria-label="'Gráfico de ' + chartMeta.label">
+              <line x1="0" y1="12" x2="600" y2="12" class="grid"/>
+              <line x1="0" y1="85" x2="600" y2="85" class="grid"/>
+              <line x1="0" y1="158" x2="600" y2="158" class="grid"/>
+              <polyline v-for="l in chart.lines" :key="l.key" :class="'chart-line line-' + l.key" :points="l.points"/>
+            </svg>
           </div>
+          <ul class="chart-legend">
+            <li v-for="l in chart.lines" :key="l.key"><i :class="'line-' + l.key"></i>{{ l.label }} <b>{{ fmt(l.last, chartMeta.digits) }} {{ chartMeta.unit }}</b></li>
+          </ul>
+          <p class="sim-note">Leituras simuladas.</p>
+        </section>
+      </div>
+
+      <!-- ========== Máquinas ========== -->
+      <div v-else-if="activeMenu === 'Máquinas'" class="machines-view">
+
+        <!-- Detalhe da máquina -->
+        <section v-if="currentMachine" class="machine-detail">
+          <div class="viewer-card">
+            <div class="stage" ref="stage"></div>
+            <div class="viewer-tools">
+              <button type="button" @click="toggleRotate">{{ autoRotate ? 'Parar giro' : 'Girar sozinha' }}</button>
+              <button type="button" @click="resetView">Vista inicial</button>
+            </div>
+            <p class="viewer-hint">Arraste para girar, role para aproximar</p>
+          </div>
+
+          <div class="detail-side">
+            <div class="panel">
+              <h2>Leituras agora</h2>
+              <div v-for="r in readings(currentMachine)" :key="r.key" class="reading" :class="'lvl-' + r.level">
+                <div>
+                  <div class="reading-name">{{ r.label }}</div>
+                  <div class="reading-value">{{ r.value }}<small>{{ r.unit }}</small></div>
+                  <div class="reading-range">{{ r.range }}</div>
+                </div>
+                <svg viewBox="0 0 120 38" preserveAspectRatio="none" aria-hidden="true"><polyline class="spark" :points="r.points"/></svg>
+              </div>
+              <p class="sim-note">Leituras simuladas, atualizadas a cada 2 segundos.</p>
+            </div>
+
+            <div class="panel">
+              <h2>Pontos críticos</h2>
+              <ul v-if="evaluations[currentMachine.id].issues.length" class="issue-list">
+                <li v-for="issue in evaluations[currentMachine.id].issues" :key="issue.key">
+                  <button type="button" class="issue" :class="'lvl-' + issue.level" @click="focusIssue(issue)">
+                    <i class="issue-dot"></i>
+                    <span>
+                      <b>{{ issue.part }}</b>
+                      <em>{{ issue.level === 2 ? 'Crítico' : 'Atenção' }}</em>
+                      <span class="issue-text">{{ issue.text }}</span>
+                    </span>
+                  </button>
+                </li>
+              </ul>
+              <p v-else class="no-issue">Nenhum ponto crítico agora. As três leituras estão dentro da faixa normal.</p>
+            </div>
+
+            <div class="panel">
+              <h2>Ficha da máquina</h2>
+              <dl class="spec">
+                <dt>Número</dt><dd>{{ currentMachine.id }}</dd>
+                <dt>Categoria</dt><dd>{{ currentMachine.category === 'trator' ? 'Trator' : 'Colheitadeira' }}</dd>
+                <dt>Modelo</dt><dd>{{ currentMachine.modelo }}</dd>
+                <dt>Setor</dt><dd>{{ currentMachine.setor }}</dd>
+                <dt>Ano</dt><dd>{{ currentMachine.ano || 'Não informado' }}</dd>
+                <dt>Horas de uso</dt><dd>{{ fmt(currentMachine.horas, 0) }} h</dd>
+                <dt>Última manutenção</dt><dd>{{ currentMachine.ultima }}</dd>
+                <dt>Próxima revisão</dt><dd>{{ currentMachine.proxima }}</dd>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        <!-- Lista por categoria -->
+        <div v-else class="machine-list">
+          <section class="toolbar">
+            <div class="tabs">
+              <button v-for="tab in machineTabs" :key="tab" :class="{ selected: machineTab === tab }" @click="machineTab = tab">
+                {{ tab }}
+              </button>
+            </div>
+            <div class="live-note"><i></i>Dados simulados, atualizam a cada 2 s</div>
+          </section>
+
+          <section v-for="group in groupedMachines" :key="group.key" class="machine-group">
+            <div class="group-head">
+              <h2>{{ group.label }}</h2>
+              <span>{{ group.items.length }} {{ group.items.length === 1 ? 'máquina' : 'máquinas' }}</span>
+            </div>
+            <div class="table-scroll">
+              <table class="machine-table">
+                <thead>
+                  <tr>
+                    <th>Nº</th>
+                    <th>Máquina</th>
+                    <th>Setor</th>
+                    <th>Temperatura</th>
+                    <th>Rotação</th>
+                    <th>Pressão</th>
+                    <th>Status</th>
+                    <th class="action-col"><span class="sr-only">Abrir</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="m in group.items" :key="m.id" tabindex="0"
+                      :aria-label="'Abrir ' + m.id"
+                      @click="showMachine(m.id)" @keydown.enter="showMachine(m.id)">
+                    <td class="machine-id">{{ m.id }}</td>
+                    <td class="machine-name">{{ m.name }}<small>{{ m.modelo }}</small></td>
+                    <td class="address">{{ m.setor }}</td>
+                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.temp">{{ fmt(m.temp, 1) }} °C</td>
+                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.rpm">{{ fmt(m.rpm, 0) }} rpm</td>
+                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.pressao">{{ fmt(m.pressao, 2) }} bar</td>
+                    <td><span class="status" :class="evaluations[m.id].status"><i></i>{{ evaluations[m.id].label }}</span></td>
+                    <td class="go" aria-hidden="true">›</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <p v-if="groupedMachines.length === 0" class="empty-state">Nenhuma máquina encontrada.</p>
         </div>
       </div>
-    </div>
-    <div
-      class="modal fade"
-      id="alert-modal"
-      tabindex="-1"
-      aria-labelledby="alert-title"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 id="alert-title" class="modal-title">Verificar AG-001</h2>
-            <button
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Fechar alerta"
-            ></button>
+
+      <!-- ========== Cadastro ========== -->
+      <div v-else-if="activeMenu === 'Cadastro'" class="cadastro-view">
+        <section class="toolbar">
+          <div class="tabs">
+            <button :class="{ selected: cadTab === 'Máquina' }" @click="cadTab = 'Máquina'">Máquinas</button>
+            <button :class="{ selected: cadTab === 'Setor' }" @click="cadTab = 'Setor'">Setores</button>
           </div>
-          <div id="alert-detail" class="modal-body"></div>
-          <div class="modal-footer">
-            <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
-              Fechar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div
-      class="modal fade"
-      id="report-modal"
-      tabindex="-1"
-      aria-labelledby="report-title"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <form class="modal-content" id="report-form">
-          <div class="modal-header">
-            <h2 id="report-title" class="modal-title">Reportar problema</h2>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Cancelar relato"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <p class="muted mb-4">
-              Descreva o que você observou na máquina. Em caso de risco, siga os
-              procedimentos de segurança da unidade.
+        </section>
+
+        <!-- Nova máquina -->
+        <div v-if="cadTab === 'Máquina'" class="cad-grid">
+          <form class="panel form-panel" @submit.prevent="addMachine" novalidate>
+            <h2>Nova máquina</h2>
+            <div class="form-grid">
+              <label class="field">
+                <span>Categoria</span>
+                <select v-model="form.category">
+                  <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.key === 'trator' ? 'Trator' : 'Colheitadeira' }}</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Número da máquina</span>
+                <input v-model="form.id" type="text" :placeholder="suggestedId" maxlength="12">
+                <small>Em branco, usa {{ suggestedId }}.</small>
+              </label>
+              <label class="field">
+                <span>Nome</span>
+                <input v-model="form.name" type="text" :placeholder="suggestedName">
+              </label>
+              <label class="field">
+                <span>Modelo</span>
+                <input v-model="form.modelo" type="text" placeholder="Ex.: 180 cv">
+              </label>
+              <label class="field">
+                <span>Setor</span>
+                <select v-model="form.setor" :disabled="!sectors.length">
+                  <option v-if="!sectors.length" value="">Nenhum setor cadastrado</option>
+                  <option v-for="s in sectors" :key="s.nome" :value="s.nome">{{ s.nome }}</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Ano</span>
+                <input v-model.number="form.ano" type="number" min="1980" max="2027" placeholder="2022">
+              </label>
+              <label class="field">
+                <span>Horas de uso</span>
+                <input v-model.number="form.horas" type="number" min="0" placeholder="0">
+              </label>
+              <label class="field">
+                <span>Última manutenção</span>
+                <input v-model="form.ultima" type="date">
+              </label>
+              <label class="field">
+                <span>Próxima revisão</span>
+                <input v-model="form.proxima" type="date">
+              </label>
+              <label class="field">
+                <span>Como o simulador deve se comportar</span>
+                <select v-model="form.behavior">
+                  <option v-for="b in behaviors" :key="b.key" :value="b.key">{{ b.label }}</option>
+                </select>
+              </label>
+            </div>
+            <p v-if="formError" class="form-msg err" role="alert">{{ formError }}</p>
+            <p v-if="formOk" class="form-msg ok" role="status">
+              {{ formOk }} <button type="button" class="link-btn" @click="openMachineById(lastAdded)">Ver máquina</button>
             </p>
-            <label class="form-label" for="report-machine">Máquina</label
-            ><input
-              class="form-control mb-3"
-              id="report-machine"
-              readonly
-            /><label class="form-label" for="report-description"
-              >O que aconteceu?
-              <span class="required" aria-hidden="true">*</span></label
-            ><textarea
-              class="form-control"
-              id="report-description"
-              rows="4"
-              minlength="10"
-              maxlength="1000"
-              required
-              placeholder="Ex.: ruído incomum durante a operação…"
-              aria-describedby="report-help report-error"
-            ></textarea>
-            <p id="report-help" class="small-text muted mt-2">
-              Entre 10 e 1.000 caracteres. O relato será salvo apenas neste
-              navegador, sem envio à manutenção.
-            </p>
-            <p
-              id="report-error"
-              class="text-danger mt-2"
-              role="alert"
-              hidden
-            ></p>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              data-bs-dismiss="modal"
-            >
-              Cancelar</button
-            ><button class="btn btn-primary" type="submit">
-              Salvar relato local
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-      <div
-        class="toast"
-        id="app-toast"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <div class="d-flex">
-          <div class="toast-body" id="toast-message"></div>
-          <button
-            class="btn-close me-3 m-auto"
-            data-bs-dismiss="toast"
-            aria-label="Fechar notificação"
-          ></button>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Adicionar máquina</button>
+            </div>
+          </form>
+
+          <section class="panel">
+            <h2>Máquinas cadastradas ({{ machines.length }})</h2>
+            <ul class="cad-list">
+              <li v-for="m in machines" :key="m.id">
+                <span class="cad-main"><b>{{ m.id }}</b> {{ m.name }}<small>{{ m.setor }}</small></span>
+                <span class="status" :class="evaluations[m.id].status"><i></i>{{ evaluations[m.id].label }}</span>
+                <button type="button" class="btn ghost" :aria-label="'Remover ' + m.id" @click="removeMachine(m.id)">Remover</button>
+              </li>
+            </ul>
+            <p v-if="!machines.length" class="no-issue">Nenhuma máquina cadastrada.</p>
+          </section>
         </div>
+
+        <!-- Novo setor -->
+        <div v-else class="cad-grid">
+          <form class="panel form-panel" @submit.prevent="addSector" novalidate>
+            <h2>Novo setor</h2>
+            <div class="form-grid one">
+              <label class="field">
+                <span>Nome do setor</span>
+                <input v-model="sectorForm.nome" type="text" placeholder="Ex.: Setor Centro">
+              </label>
+              <label class="field">
+                <span>Descrição</span>
+                <input v-model="sectorForm.descricao" type="text" placeholder="Ex.: Talhões de café">
+              </label>
+              <label class="field">
+                <span>Área em hectares</span>
+                <input v-model.number="sectorForm.hectares" type="number" min="0" placeholder="0">
+              </label>
+            </div>
+            <p v-if="sectorError" class="form-msg err" role="alert">{{ sectorError }}</p>
+            <p v-if="sectorOk" class="form-msg ok" role="status">{{ sectorOk }}</p>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Adicionar setor</button>
+            </div>
+          </form>
+
+          <section class="panel">
+            <h2>Setores cadastrados ({{ sectors.length }})</h2>
+            <ul class="cad-list">
+              <li v-for="s in sectors" :key="s.nome">
+                <span class="cad-main"><b>{{ s.nome }}</b><small>{{ s.descricao || 'Sem descrição' }}{{ s.hectares ? ', ' + fmt(s.hectares, 0) + ' ha' : '' }}</small></span>
+                <span class="cad-count">{{ sectorCounts[s.nome] }} {{ sectorCounts[s.nome] === 1 ? 'máquina' : 'máquinas' }}</span>
+                <button type="button" class="btn ghost" :disabled="sectorCounts[s.nome] > 0"
+                        :title="sectorCounts[s.nome] > 0 ? 'Mova ou remova as máquinas deste setor primeiro' : ''"
+                        @click="removeSector(s.nome)">Remover</button>
+              </li>
+            </ul>
+            <p v-if="!sectors.length" class="no-issue">Nenhum setor cadastrado.</p>
+          </section>
+        </div>
+
+        <p class="restore"><button type="button" class="link-btn" @click="restoreExamples">Voltar para os dados de exemplo</button></p>
       </div>
+
+      <!-- ========== Relatórios ========== -->
+      <div v-else class="report-view">
+        <section class="report-controls">
+          <label class="field inline">
+            <span>Setor</span>
+            <select v-model="reportSetor">
+              <option>Todos</option>
+              <option v-for="s in sectors" :key="s.nome">{{ s.nome }}</option>
+            </select>
+          </label>
+          <label class="field inline">
+            <span>Categoria</span>
+            <select v-model="reportCategoria">
+              <option value="Todas">Todas</option>
+              <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.label }}</option>
+            </select>
+          </label>
+          <div class="report-buttons">
+            <button type="button" class="btn ghost" @click="resetRecord">Zerar registro</button>
+            <button type="button" class="btn primary" @click="printReport">Imprimir relatório</button>
+          </div>
+        </section>
+        <p class="report-note">O relatório usa as leituras simuladas desde que a página foi aberta. Ao recarregar, o registro recomeça.</p>
+
+        <article class="report-sheet">
+          <header class="report-head">
+            <h2>Relatório de simulação</h2>
+            <p>AgroSense, manutenção preditiva</p>
+          </header>
+
+          <dl class="report-meta">
+            <dt>Gerado em</dt><dd>{{ fmtDateTime(now) }}</dd>
+            <dt>Registro desde</dt><dd>{{ fmtDateTime(sessionStart) }} ({{ duration(now - sessionStart) }}, {{ reportReadings }} leituras por máquina)</dd>
+            <dt>Filtro</dt><dd>{{ reportFilter }}</dd>
+            <dt>Situação agora</dt><dd>{{ reportRows.length }} máquinas: {{ reportCounts.ok }} normais, {{ reportCounts.warn }} em atenção, {{ reportCounts.crit }} críticas</dd>
+          </dl>
+
+          <h3>Leituras por máquina</h3>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th rowspan="2">Nº</th>
+                <th rowspan="2">Máquina</th>
+                <th rowspan="2">Setor</th>
+                <th rowspan="2">Status agora</th>
+                <th colspan="3">Temperatura (°C)</th>
+                <th colspan="3">Rotação (rpm)</th>
+                <th colspan="3">Pressão (bar)</th>
+                <th rowspan="2">Atenção</th>
+                <th rowspan="2">Crítico</th>
+              </tr>
+              <tr>
+                <th>Mín</th><th>Méd</th><th>Máx</th>
+                <th>Mín</th><th>Méd</th><th>Máx</th>
+                <th>Mín</th><th>Méd</th><th>Máx</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in reportRows" :key="r.m.id">
+                <td><b>{{ r.m.id }}</b></td>
+                <td>{{ r.m.name }}</td>
+                <td>{{ r.m.setor }}</td>
+                <td><span class="status" :class="r.ev.status"><i></i>{{ r.ev.label }}</span></td>
+                <template v-if="r.sum">
+                  <td class="num">{{ fmt(r.sum.temp.min, 1) }}</td><td class="num">{{ fmt(r.sum.temp.avg, 1) }}</td><td class="num">{{ fmt(r.sum.temp.max, 1) }}</td>
+                  <td class="num">{{ fmt(r.sum.rpm.min, 0) }}</td><td class="num">{{ fmt(r.sum.rpm.avg, 0) }}</td><td class="num">{{ fmt(r.sum.rpm.max, 0) }}</td>
+                  <td class="num">{{ fmt(r.sum.pressao.min, 2) }}</td><td class="num">{{ fmt(r.sum.pressao.avg, 2) }}</td><td class="num">{{ fmt(r.sum.pressao.max, 2) }}</td>
+                  <td class="num">{{ pct(r.sum.warnPct) }}</td>
+                  <td class="num">{{ pct(r.sum.critPct) }}</td>
+                </template>
+                <td v-else colspan="11" class="num">Sem leituras ainda</td>
+              </tr>
+              <tr v-if="!reportRows.length"><td colspan="15" class="empty-state">Nenhuma máquina neste filtro.</td></tr>
+            </tbody>
+          </table>
+          <p class="report-foot">Atenção e Crítico mostram a parte das leituras em que a máquina esteve nessa situação.</p>
+
+          <h3>Pontos críticos agora</h3>
+          <table v-if="reportIssues.length" class="report-table compact">
+            <thead><tr><th>Nº</th><th>Setor</th><th>Peça</th><th>Nível</th><th>Leitura</th></tr></thead>
+            <tbody>
+              <tr v-for="i in reportIssues" :key="i.id + i.issue.key">
+                <td><b>{{ i.id }}</b></td><td>{{ i.setor }}</td><td>{{ i.issue.part }}</td>
+                <td>{{ i.issue.level === 2 ? 'Crítico' : 'Atenção' }}</td><td>{{ i.issue.text }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-else class="report-foot">Nenhum ponto crítico no momento.</p>
+
+          <h3>Registro de alertas</h3>
+          <table v-if="reportEvents.length" class="report-table compact">
+            <thead><tr><th>Horário</th><th>Nº</th><th>Setor</th><th>Situação</th><th>Detalhe</th></tr></thead>
+            <tbody>
+              <tr v-for="(e, idx) in reportEvents" :key="idx">
+                <td>{{ fmtTime(e.time) }}</td><td><b>{{ e.id }}</b></td><td>{{ e.setor }}</td>
+                <td><span class="status" :class="e.status"><i></i>{{ e.label }}</span></td><td>{{ e.text }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-else class="report-foot">Nenhuma mudança de situação registrada ainda.</p>
+
+          <p class="report-foot">Todos os dados deste relatório são simulados. Nenhum sensor real foi usado.</p>
+        </article>
+      </div>
+
+      <footer>© 2026 AgroSense</footer>
+    </main>
+
+  <TransitionGroup name="ag-toast" tag="div" class="toast-stack" aria-label="Avisos do sistema">
+    <div v-for="toast in toasts" :key="toast.id" class="ag-toast" :class="'toast-' + toast.kind"
+         :role="toast.kind === 'error' ? 'alert' : 'status'">
+      <span class="toast-symbol" aria-hidden="true">{{ toast.kind === 'success' ? '✓' : toast.kind === 'error' ? '!' : toast.kind === 'warning' ? '!' : 'i' }}</span>
+      <span class="toast-copy">{{ toast.text }}</span>
+      <button type="button" class="toast-dismiss" aria-label="Dispensar aviso" @click="closeToast(toast.id)">×</button>
     </div>
-    <noscript
-      ><p class="panel m-4">
-        Ative o JavaScript para visualizar o painel AgroSense.
-      </p></noscript
-    >
-    <script src="assets/vendor/bootstrap.bundle.min.js"></script>
-    <script type="module" src="js/app.js"></script>
-  </body>
+  </TransitionGroup>
+
+  <Transition name="ag-modal">
+    <div v-if="confirmDialog" class="ag-modal-backdrop" @click.self="dismissConfirm">
+      <section class="ag-dialog" role="dialog" aria-modal="true" aria-labelledby="ag-dialog-title"
+               aria-describedby="ag-dialog-text" @keydown="onDialogKeydown">
+        <div class="ag-dialog-icon" aria-hidden="true">!</div>
+        <h2 id="ag-dialog-title">{{ confirmTitle }}</h2>
+        <p id="ag-dialog-text">{{ confirmMessage }}</p>
+        <div class="ag-dialog-actions">
+          <button ref="cancelConfirmBtn" type="button" class="btn ghost" @click="dismissConfirm">Cancelar</button>
+          <button type="button" class="btn danger" @click="confirmAction">{{ confirmLabel }}</button>
+        </div>
+      </section>
+    </div>
+  </Transition>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="js/machines.js"></script>
+  <script src="js/viewer3d.js"></script>
+  <script src="js/main.js"></script>
+</body>
 </html>

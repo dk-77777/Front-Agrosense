@@ -1,108 +1,102 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#17664d" />
-    <title>Acesso · AgroSense</title>
-    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="assets/vendor/bootstrap.min.css" />
-    <link rel="stylesheet" href="assets/vendor/bootstrap-icons.css" />
-    <link rel="stylesheet" href="css/tokens.css" />
-    <link rel="stylesheet" href="css/base.css" />
-    <link rel="stylesheet" href="css/layout.css" />
-    <link rel="stylesheet" href="css/responsive.css" />
-  </head>
-  <body>
-    <main class="login-layout">
-      <section class="login-story" aria-label="AgroSense">
-        <a
-          class="brand"
-          id="login-brand"
-          href="./login.html"
-          aria-label="AgroSense"
-        ></a>
-        <div>
-          <span class="eyebrow" style="color: #c3d6cd"
-            >PRECISÃO EM CADA LEITURA</span
-          >
-          <h1 class="mt-3">
-            Mais clareza.<br />Mais controle.<br />Uma operação melhor.
-          </h1>
-          <p>
-            Acompanhe a condição do equipamento e identifique quando é hora de
-            agir.
-          </p>
-        </div>
-        <small>AgroSense · Monitoramento agroindustrial</small>
-      </section>
-      <section class="login-form-wrap">
-        <form id="login-form" class="login-form">
-          <span class="badge-status normal">AMBIENTE DEMONSTRATIVO</span>
-          <h1>Acesse sua operação</h1>
-          <p class="muted">Explore o painel do operador com dados simulados.</p>
-          <fieldset class="demo-profiles">
-            <legend>Escolha um perfil para explorar</legend>
-            <div class="demo-profile-grid">
-              <button
-                type="button"
-                data-demo-email="operador@agrosense.com"
-                aria-pressed="true"
-              >
-                <i class="bi bi-gear-wide-connected" aria-hidden="true"></i
-                ><span>Operador</span></button
-              ><button
-                type="button"
-                data-demo-email="tecnico@agrosense.com"
-                aria-pressed="false"
-              >
-                <i class="bi bi-tools" aria-hidden="true"></i
-                ><span>Técnico</span></button
-              ><button
-                type="button"
-                data-demo-email="gestor@agrosense.com"
-                aria-pressed="false"
-              >
-                <i class="bi bi-bar-chart" aria-hidden="true"></i
-                ><span>Gestor</span></button
-              ><button
-                type="button"
-                data-demo-email="admin@agrosense.com"
-                aria-pressed="false"
-              >
-                <i class="bi bi-people" aria-hidden="true"></i
-                ><span>Administrador</span>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Entrar · AgroSense</title>
+  <script>document.documentElement.classList.add('ag-js')</script>
+  <!-- Se o projeto já carrega o Bootstrap, mantenha o link existente aqui. Esta tela não depende dele. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="login.css">
+</head>
+<body class="ag-login">
+  <!-- Foto de fundo (desfocada por CSS). Substitua pelo arquivo real escolhido para o projeto. -->
+  <img class="ag-bg" src="assets/img/login-campo.jpg" width="1600" height="1100" alt="" decoding="async">
+
+  <main class="ag-shell" data-r style="--d:0">
+    <section class="ag-form-col" aria-labelledby="titulo">
+      <div class="ag-form">
+        <header class="ag-head">
+          <img class="ag-logo" src="assets/img/logo-agrosense.svg" alt="AgroSense" height="34" data-r style="--d:1">
+          <h1 class="ag-title" id="titulo">Bem-vindo à AgroSense.</h1>
+          <p class="ag-lead" data-r style="--d:4">Acompanhe sua operação agrícola em um só lugar.</p>
+        </header>
+
+        <form id="login-form" novalidate>
+          <div class="ag-field" data-r style="--d:5">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" inputmode="email" autocomplete="username" required
+                   aria-describedby="email-erro" aria-invalid="false" placeholder="nome@fazenda.com.br">
+            <p class="ag-err" id="email-erro"></p>
+          </div>
+
+          <div class="ag-field" data-r style="--d:6">
+            <label for="senha">Senha</label>
+            <div class="ag-pass">
+              <input id="senha" name="senha" type="password" autocomplete="current-password" required
+                     aria-describedby="senha-erro" aria-invalid="false">
+              <button type="button" class="ag-eye" id="toggle-senha" aria-label="Mostrar senha" aria-pressed="false">
+                <svg class="eye-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6a9.8 9.8 0 0 1 1.4-.1c6.4 0 10 6.1 10 6.1a17 17 0 0 1-3.2 3.9M6.5 7.5A17 17 0 0 0 2 12s3.6 6.5 10 6.5c1.5 0 2.8-.3 4-.9M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
               </button>
             </div>
-          </fieldset>
-          <label class="form-label" for="email">E-mail de demonstração</label
-          ><input
-            class="form-control"
-            type="email"
-            autocomplete="username"
-            id="email"
-            name="email"
-            required
-            value="operador@agrosense.com"
-            aria-describedby="login-hint login-error"
-          />
-          <p class="small-text muted mt-2 mb-4" id="login-hint">
-            Perfis: operador@agrosense.com · tecnico@agrosense.com ·
-            gestor@agrosense.com · admin@agrosense.com. Todos sem senha.
-          </p>
-          <p id="login-error" class="text-danger" role="alert" hidden></p>
-          <button class="btn btn-primary" type="submit">
-            Entrar na demonstração
-            <i class="bi bi-arrow-right" aria-hidden="true"></i>
-          </button>
-          <div class="status-note">
-            <i class="bi bi-info-circle" aria-hidden="true"></i> Acesso sem
-            senha para demonstração. Não utiliza autenticação real nem sensores
-            conectados.
+            <p class="ag-err" id="senha-erro"></p>
+          </div>
+
+          <div class="ag-demo-access" data-r style="--d:7" aria-label="Contas de demonstração">
+            <p><strong>Ambiente demonstrativo</strong> · selecione um perfil para entrar.</p>
+            <div class="ag-demo-picks">
+              <button type="button" data-demo-email="operador@agrosense.com">Operador</button>
+              <button type="button" data-demo-email="tecnico@agrosense.com">Técnico</button>
+              <button type="button" data-demo-email="gestor@agrosense.com">Gestor</button>
+            </div>
+            <p class="ag-demo-credential">Senha dos três perfis: <code>Agro2026!</code></p>
+            <p class="ag-demo-security">O acesso é uma simulação local, sem autenticação por servidor.</p>
+          </div>
+          <div class="ag-row" data-r style="--d:7">
+            <a class="ag-link" href="recuperar-senha.html">Esqueceu sua senha?</a>
+          </div>
+
+          <p class="ag-alert" id="form-status" role="alert" hidden></p>
+          <p class="ag-sr" id="sr-status" role="status"></p>
+
+          <div class="ag-actions" data-r style="--d:8">
+            <button class="ag-btn" id="entrar" type="submit" data-state="idle">
+              <span class="ag-btn__label">Entrar na plataforma</span>
+              <svg class="ag-btn__spin" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"/></svg>
+              <svg class="ag-btn__ok" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/></svg>
+            </button>
           </div>
         </form>
-      </section>
-    </main>
-    <script type="module" src="js/login.js"></script>
-  </body>
+      </div>
+    </section>
+
+    <aside class="ag-visual" aria-hidden="true">
+      <div class="ag-grid"></div>
+      <div class="ag-scene"></div>
+
+      <!-- Indicadores: ancorados em células da cena (data-gx, data-gy, data-gz) e posicionados por login-scene.js via project(). -->
+      <div class="ag-pins">
+        <div class="ag-pin" data-gx="11.5" data-gy="7.5" data-gz="1" style="--h:104px;--d:0">
+          <span class="ag-pin__line"></span><span class="ag-pin__dot"></span>
+          <div class="ag-pin__label"><strong>Área monitorada</strong><span>Talhão 03 · Fazenda demonstrativa</span></div>
+        </div>
+        <div class="ag-pin" data-gx="2" data-gy="7" data-gz="1" style="--h:90px;--d:1">
+          <span class="ag-pin__line"></span><span class="ag-pin__dot"></span>
+          <div class="ag-pin__label"><strong>Manutenção preditiva</strong><span>Equipamentos sob acompanhamento</span></div>
+        </div>
+        <div class="ag-pin ag-pin--pill" data-gx="8.5" data-gy="10.5" data-gz="1" style="--h:46px;--d:2">
+          <span class="ag-pin__line"></span><span class="ag-pin__dot"></span>
+          <div class="ag-pin__label"><strong>Monitoramento agrícola</strong></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="js/demo-auth.js" defer></script>
+  <script src="login.js" defer></script>
+  <script src="login-scene.js" defer></script>
+</body>
 </html>
