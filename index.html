@@ -7,7 +7,7 @@
   <title>AgroSense</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/demo-auth.js"></script>
   <script>if (!window.AgroSenseAuth.session()) location.replace('login.html');</script>
   <link rel="stylesheet" href="css/style.css">
@@ -93,8 +93,7 @@
               <section v-if="profileOpen" id="profile-info" class="profile-popover" aria-label="Informações da demonstração" @click.stop>
                 <strong>{{ currentUser.nome }}</strong><span>{{ userProfileLabel }} · Demonstração</span>
                 <p>Acesso local demonstrativo; as permissões não são aplicadas por um servidor.</p>
-                <button type="button" class="ag-profile-settings" @click="profileOpen = false; goMenu('Configurações')">Configurações <span aria-hidden="true">›</span></button>
-          <button type="button" class="ag-signout" @click="logout">Sair da conta <span aria-hidden="true">↗</span></button>
+                <button type="button" class="ag-signout" @click="logout">Sair da conta <span aria-hidden="true">↗</span></button>
               </section>
             </Transition>
           </div>
@@ -110,30 +109,33 @@
       <!-- ========== Início ========== -->
       <div v-if="activeMenu === 'Início'" class="home-view">
         <section class="home-hero" aria-labelledby="home-title">
-          <div class="home-hero-copy">
-            <h1 id="home-title" class="home-title">Bem-vindo, {{ currentUser.nome }}.</h1>
-            <p class="home-lead">Acompanhe equipamentos, alertas e manutenções.</p>
-            <div class="home-actions">
-              <button type="button" class="home-btn home-btn-primary" @click="goFromHome('Dashboard')">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>Monitoramento
-              </button>
-            </div>
-          </div>
-          <div class="home-hero-brand">
-            <img src="assets/img/agrosense-logo-oficial.png" alt="AgroSense" width="2172" height="724">
+          <h1 id="home-title" class="home-title">Bem-vindo, {{ currentUser.nome }}.</h1>
+          <p class="home-lead">Acompanhe equipamentos, alertas e manutenções.</p>
+          <div class="home-actions">
+            <button type="button" class="home-btn home-btn-primary" @click="goFromHome('Dashboard')">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>Monitoramento
+            </button>
           </div>
         </section>
 
-        <div class="home-shortcuts-head"><h2>Acessos rápidos</h2></div>
         <nav class="home-shortcuts row" aria-label="Acessos rápidos">
           <div v-for="item in homeShortcuts" :key="item.key" :class="homeShortcutCol">
             <a href="#" class="home-shortcut" @click.prevent="goFromHome(item.menu, item.target)">
               <span class="home-shortcut-icon" v-html="item.icon"></span>
               <span class="home-shortcut-text"><b>{{ item.label }}</b><small>{{ item.text }}</small></span>
-              <span class="home-shortcut-arrow" aria-hidden="true">↗</span>
             </a>
           </div>
         </nav>
+
+        <section class="home-feature" aria-labelledby="home-feature-title">
+          <div class="home-feature-copy">
+            <h2 id="home-feature-title">Tecnologia para o campo.</h2>
+            <p>Monitoramento e manutenção em uma única plataforma.</p>
+          </div>
+          <div class="home-feature-brand">
+            <img src="assets/img/agrosense-logo-oficial.png" alt="AgroSense" width="2172" height="724">
+          </div>
+        </section>
       </div>
 
       <!-- ========== Dashboard ========== -->
