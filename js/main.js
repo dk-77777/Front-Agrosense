@@ -1,6 +1,7 @@
 const { createApp } = Vue;
 const loggedUser = window.AgroSenseAuth.session();
 const userLabel = { operador: 'Operador', tecnico: 'Técnico', gestor: 'Gestor' };
+const storedPreferences = window.AgroPreferences.load(loggedUser?.id || loggedUser?.perfil);
 const visibleMenus = {
   operador: ['Dashboard', 'Máquinas'],
   tecnico: ['Dashboard', 'Máquinas', 'Relatórios'],
@@ -17,10 +18,9 @@ let returnFocusAfterDialog = null;
 // Microinteração curta: apenas quando um indicador de fato muda de valor.
 const numberPop = {
   updated(el, binding) {
-    if (binding.value === binding.oldValue || reducedMotion) return;
-    el.classList.remove('ag-number-changed');
-    void el.offsetWidth;
-    el.classList.add('ag-number-changed');
+    if (binding.value === binding.oldValue || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    el.getAnimations().forEach(animation => animation.cancel());
+    el.animate([{ opacity: .65, transform: 'translateY(2px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 240, easing: 'cubic-bezier(.2,0,0,1)' });
   }
 };
 const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -33,9 +33,9 @@ const initialSectors = saved
 const initialMachines = AgroData.createMachines(saved ? saved.machines : null);
 
 const CHART_META = {
-  temp: { label: 'Temperatura', unit: '°C', digits: 1, span: 6 },
-  rpm: { label: 'Rotação', unit: 'rpm', digits: 0, span: 300 },
-  pressao: { label: 'Pressão do óleo', unit: 'bar', digits: 2, span: 1 }
+  temp: { label: 'Temperatura', unit: '°C', digits: 1, span: 6, step: 5 },
+  rpm: { label: 'Rotação', unit: 'rpm', digits: 0, span: 300, step: 100 },
+  pressao: { label: 'Pressão do óleo', unit: 'bar', digits: 2, span: 1, step: 0.5 }
 };
 
 function emptyForm(category, setor) {
@@ -51,14 +51,16 @@ function emptyForm(category, setor) {
 const app = createApp({
   data() {
     return {
-      activeMenu: 'Dashboard',
+      activeMenu: 'Início',
       currentUser: loggedUser || { nome: 'Visitante', perfil: 'operador' },
       menu: [
+        { label: 'Início', icon: '<svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/></svg>' },
         { label: 'Dashboard', icon: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' },
         { label: 'Máquinas', icon: '<svg viewBox="0 0 24 24"><circle cx="7" cy="16.5" r="3.5"/><circle cx="18" cy="17.5" r="2.2"/><path d="M3.5 13V7h6l2 5h6.5M13 7h3l1.5 5"/></svg>' },
         { label: 'Cadastro', icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>' },
-        { label: 'Relatórios', icon: '<svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg>' }
-      ].filter(item => (visibleMenus[loggedUser?.perfil] || []).includes(item.label)),
+        { label: 'Relatórios', icon: '<svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg>' },
+        { label: 'Configurações', icon: '<svg viewBox="0 0 24 24"><path d="M10 3h4l.6 2.3a7.3 7.3 0 0 1 1.7.9l2.2-.8 2 3.4-1.7 1.6c.1.5.2 1.1.2 1.6s-.1 1.1-.2 1.6l1.7 1.6-2 3.4-2.2-.8c-.5.4-1.1.7-1.7.9L14 21h-4l-.6-2.3a7.3 7.3 0 0 1-1.7-.9l-2.2.8-2-3.4 1.7-1.6A7.8 7.8 0 0 1 5 12c0-.5.1-1.1.2-1.6L3.5 8.8l2-3.4 2.2.8c.5-.4 1.1-.7 1.7-.9L10 3z"/><circle cx="12" cy="12" r="2.6"/></svg>' }
+      ].filter(item => item.label === 'Início' || item.label === 'Configurações' || (visibleMenus[loggedUser?.perfil] || []).includes(item.label)),
       search: '',
       showSearch: false,
       notice: false,
@@ -66,6 +68,17 @@ const app = createApp({
       seenAlerts: {},
       toasts: [],
       confirmDialog: null,
+
+      // Preferências persistentes do usuário: aplicar somente valores confirmados.
+      preferences: { ...storedPreferences },
+      settingsDraft: { ...storedPreferences },
+      settingsTab: 'account',
+      settingsTabs: [
+        { key: 'account', label: 'Minha conta', icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20c0-4 3.2-6.3 7.2-6.3s7.2 2.3 7.2 6.3"/></svg>' },
+        { key: 'appearance', label: 'Aparência', icon: '<svg viewBox="0 0 24 24"><path d="M4 18.5 17.5 5a2.1 2.1 0 0 1 3 3L7 21.5H4v-3Z"/><path d="M13.5 9 17 12.5"/></svg>' },
+        { key: 'notifications', label: 'Notificações', icon: '<svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>' },
+        { key: 'view', label: 'Visualização', title: 'Preferências de visualização', icon: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M12.5 9h5M12.5 13h5M12.5 17h3"/></svg>' }
+      ],
 
       machines: initialMachines,
       sectors: initialSectors,
@@ -77,7 +90,12 @@ const app = createApp({
       autoRotate: !reducedMotion,
 
       // Dashboard
-      chartKey: 'temp',
+      chartKey: storedPreferences.telemetryMetric,
+      alertFilter: 'all',
+      selectedSector: '',
+      expandedAlerts: {},
+      telemetryScope: storedPreferences.telemetryScope,
+      telemetryOnlyAlerts: storedPreferences.telemetryOnlyAlerts,
       chartTabs: Object.keys(CHART_META).map(k => ({ key: k, label: CHART_META[k].label })),
 
       // Cadastro
@@ -116,8 +134,21 @@ const app = createApp({
     alertCount() {
       return this.counts.warn + this.counts.crit;
     },
+    notificationRows() {
+      if (!this.preferences.internalNotifications) return [];
+      return this.attentionList.filter(row =>
+        (row.ev.status === 'crit' && this.preferences.criticalNotices) ||
+        (row.ev.status === 'warn' && this.preferences.attentionNotices)
+      );
+    },
     unreadAlerts() {
-      return this.attentionList.filter(row => !this.isAlertRead(row)).length;
+      return this.notificationRows.filter(row => !this.isAlertRead(row)).length;
+    },
+    settingsDirty() {
+      return JSON.stringify(this.settingsDraft) !== JSON.stringify(this.preferences);
+    },
+    settingsCurrentTab() {
+      return this.settingsTabs.find(tab => tab.key === this.settingsTab) || this.settingsTabs[0];
     },
     confirmTitle() {
       if (!this.confirmDialog) return '';
@@ -144,6 +175,7 @@ const app = createApp({
       }
       if (this.activeMenu === 'Máquinas') return c.total + ' máquinas, ' + this.alertCount + ' com alerta';
       if (this.activeMenu === 'Cadastro') return 'Adicione máquinas e setores';
+      if (this.activeMenu === 'Configurações') return 'Gerencie sua conta e personalize sua experiência.';
       return 'Imprima o resumo das simulações';
     },
     // Dashboard
@@ -152,6 +184,42 @@ const app = createApp({
         .map(m => ({ m: m, ev: this.evaluations[m.id] }))
         .filter(r => r.ev.status !== 'ok')
         .sort((a, b) => (b.ev.status === 'crit') - (a.ev.status === 'crit') || a.m.id.localeCompare(b.m.id));
+    },
+    // Acessos rápidos da Início: só destinos que existem e que o perfil pode abrir.
+    homeShortcuts() {
+      const can = label => this.menu.some(item => item.label === label);
+      const svg = body => '<svg viewBox="0 0 36 36" aria-hidden="true">' + body + '</svg>';
+      const all = [
+        { key: 'maquinas', menu: 'Máquinas', label: 'Máquinas', text: 'Equipamentos e condições',
+          icon: svg('<circle cx="11" cy="24" r="7"/><circle cx="11" cy="24" r="2.4"/><circle cx="29" cy="26.5" r="4.5"/><path d="M4.5 21V10h9.5l3.5 8H29l2.5 4.5M17.5 18v-8M14 10V6h8"/>') },
+        { key: 'alertas', menu: 'Dashboard', target: '.alerts-panel', label: 'Alertas', text: 'Ocorrências ativas',
+          icon: svg('<path d="M18 5.5 32 29.5H4z"/><path d="M18 14.5v8M18 26v.5"/>') },
+        { key: 'relatorios', menu: 'Relatórios', label: 'Relatórios', text: 'Histórico e análises',
+          icon: svg('<path d="M5.5 30V21h5v9M15.5 30V6h5v24M25.5 30V14h5v16"/>') },
+        { key: 'cadastro', menu: 'Cadastro', label: 'Cadastro', text: 'Máquinas e setores',
+          icon: svg('<rect x="6" y="5" width="24" height="26" rx="3"/><path d="M18 12v12M12 18h12"/>') },
+        { key: 'telemetria', menu: 'Dashboard', target: '.telemetry-panel', label: 'Telemetria', text: 'Dados dos sensores',
+          icon: svg('<path d="M3 20h7l4-11 8 19 4-8h7"/>') }
+      ];
+      return all.filter(item => can(item.menu)).slice(0, 4);
+    },
+    homeShortcutCol() {
+      return this.homeShortcuts.length >= 4 ? 'col-12 col-sm-6 col-xl-3' : this.homeShortcuts.length === 3 ? 'col-12 col-sm-6 col-xl-4' : 'col-12 col-sm-6';
+    },
+    filteredAttention() {
+      return this.alertFilter === 'all' ? this.attentionList : this.attentionList.filter(r => r.ev.status === this.alertFilter);
+    },
+    fleetMix() {
+      const n = c => this.machines.filter(m => m.category === c).length;
+      const parts = [];
+      if (n('trator')) parts.push(n('trator') + (n('trator') === 1 ? ' trator' : ' tratores'));
+      if (n('colheitadeira')) parts.push(n('colheitadeira') + (n('colheitadeira') === 1 ? ' colheitadeira' : ' colheitadeiras'));
+      return parts.join(' · ');
+    },
+    sectorMachines() {
+      return this.machines.filter(m => m.setor === this.selectedSector)
+        .map(m => ({ m: m, ev: this.evaluations[m.id] }))
+        .sort((a, b) => b.ev.issues.length - a.ev.issues.length || a.m.id.localeCompare(b.m.id));
     },
     sectorRows() {
       return this.sectors.map(s => {
@@ -165,6 +233,61 @@ const app = createApp({
         };
         return row;
       });
+    },
+    fleetSplit() {
+      const n = c => this.machines.filter(m => m.category === c).length;
+      return [
+        { label: 'Tratores', value: n('trator') },
+        { label: 'Colheitadeiras', value: n('colheitadeira') },
+        { label: 'Setores', value: this.sectors.length }
+      ];
+    },
+    okShare() { return this.counts.total ? Math.round((this.counts.ok / this.counts.total) * 100) : 0; },
+    issueTotals() {
+      const t = { warn: 0, crit: 0 };
+      this.machines.forEach(m => this.evaluations[m.id].issues.forEach(i => { if (i.level === 2) t.crit += 1; else t.warn += 1; }));
+      return t;
+    },
+    alertRows() {
+      return this.filteredAttention.map(r => ({
+        m: r.m, ev: r.ev,
+        views: r.ev.issues.slice().sort((a, b) => b.level - a.level).map(i => this.issueView(r.m, i))
+      }));
+    },
+    telemetryScopes() {
+      const cats = AgroData.CATEGORIES.filter(c => this.machines.some(m => m.category === c.key))
+        .map(c => ({ value: 'cat:' + c.key, label: c.label + ' (' + this.machines.filter(m => m.category === c.key).length + ')' }));
+      const ms = this.machines.map(m => ({ value: 'm:' + m.id, label: m.id + ' · ' + m.name + ' · ' + m.setor }));
+      return [{ value: 'all', label: 'Toda a frota (' + this.machines.length + ')' }].concat(cats, ms);
+    },
+    telemetry() {
+      const key = this.chartKey, meta = CHART_META[key], sc = this.telemetryScope;
+      let list = this.machines;
+      if (sc.indexOf('cat:') === 0) list = list.filter(m => m.category === sc.slice(4));
+      else if (sc.indexOf('m:') === 0) list = list.filter(m => m.id === sc.slice(2));
+      const level = m => this.evaluations[m.id].levels[key];
+      const scopeTotal = list.length;
+      const outCount = list.filter(m => level(m) > 0).length;
+      if (this.telemetryOnlyAlerts) list = list.filter(m => level(m) > 0);
+      const usable = list.filter(m => m.history && m.history[key] && m.history[key].length > 1);
+      const series = usable.map(m => ({ id: m.id, name: m.name, level: level(m), values: m.history[key].slice(), now: m[key] }));
+      const cats = Array.from(new Set(usable.map(m => m.category)));
+      let limits = [];
+      if (cats.length === 1) {
+        const L = AgroData.LIMITS[cats[0]][key];
+        if (key === 'rpm') limits = [
+          { v: L.critHi, label: 'Crítico acima de', level: 2 }, { v: L.hi, label: 'Atenção acima de', level: 1 },
+          { v: L.lo, label: 'Atenção abaixo de', level: 1 }, { v: L.critLo, label: 'Crítico abaixo de', level: 2 }];
+        else if (key === 'temp') limits = [{ v: L.crit, label: 'Crítico a partir de', level: 2 }, { v: L.warn, label: 'Atenção acima de', level: 1 }];
+        else limits = [{ v: L.warn, label: 'Atenção abaixo de', level: 1 }, { v: L.crit, label: 'Crítico até', level: 2 }];
+      }
+      let emptyText = '';
+      if (!series.length) {
+        if (!scopeTotal) emptyText = 'Nenhuma máquina neste escopo.';
+        else if (this.telemetryOnlyAlerts && !outCount) emptyText = 'Nenhuma máquina fora do limite neste sensor.';
+        else emptyText = 'Histórico insuficiente: aguarde as próximas leituras.';
+      }
+      return { meta: meta, series: series, limits: limits, scopeTotal: scopeTotal, outCount: outCount, emptyText: emptyText, limitHint: cats.length > 1 };
     },
     chartMeta() { return CHART_META[this.chartKey]; },
     chart() {
@@ -181,6 +304,7 @@ const app = createApp({
           label: c.label,
           items: this.machines.filter(m => m.category === c.key &&
             (!term || [m.id, m.name, m.modelo, m.setor].join(' ').toLowerCase().includes(term)))
+            .sort((a, b) => this.compareMachines(a, b))
         }))
         .filter(g => g.items.length);
     },
@@ -227,14 +351,26 @@ const app = createApp({
   },
   watch: {
     activeMenu(menu) {
+      if (history.state?.agroMenu !== menu) {
+        history.pushState({ ...history.state, agroMenu: menu }, '');
+      }
       this.notice = false;
       this.profileOpen = false;
       this.showSearch = false;
       if (menu !== 'Máquinas') this.backToList();
     },
-    sectors: { deep: true, handler() { this.persist(); } }
+    sectors: { deep: true, handler() { this.persist(); } },
+    chartKey(value) { this.rememberLiveTelemetry('telemetryMetric', value); },
+    telemetryScope(value) { this.rememberLiveTelemetry('telemetryScope', value); },
+    telemetryOnlyAlerts(value) { this.rememberLiveTelemetry('telemetryOnlyAlerts', value); }
   },
   mounted() {
+    history.replaceState({ ...history.state, agroMenu: this.activeMenu }, '');
+    window.addEventListener('popstate', this.restoreMenu);
+    window.addEventListener('beforeunload', this.warnUnsaved);
+    if (!this.telemetryScopes.some(option => option.value === this.telemetryScope)) {
+      this.telemetryScope = 'all';
+    }
     // Máquinas que já começam fora do normal entram no registro de alertas.
     this.machines.forEach(m => {
       const ev = this.evaluations[m.id];
@@ -245,6 +381,8 @@ const app = createApp({
     document.addEventListener('keydown', this.onGlobalKeydown);
   },
   beforeUnmount() {
+    window.removeEventListener('popstate', this.restoreMenu);
+    window.removeEventListener('beforeunload', this.warnUnsaved);
     clearInterval(timer);
     toastTimers.forEach(timeout => clearTimeout(timeout));
     toastTimers.clear();
@@ -253,7 +391,10 @@ const app = createApp({
     this.destroyViewer();
   },
   methods: {
-    logout() { window.AgroSenseAuth.logout(); },
+    logout() {
+      if (!this.confirmDiscardSettings()) return;
+      window.AgroSenseAuth.logout();
+    },
     fmt: AgroData.fmt,
     readings(m) { return AgroData.readings(m); },
     fmtDateTime(ts) { return new Date(ts).toLocaleString('pt-BR'); },
@@ -273,7 +414,7 @@ const app = createApp({
     },
     isAlertRead(row) { return !!this.seenAlerts[this.alertKey(row)]; },
     markAllAlertsRead() {
-      this.attentionList.forEach(row => { this.seenAlerts[this.alertKey(row)] = true; });
+      this.notificationRows.forEach(row => { this.seenAlerts[this.alertKey(row)] = true; });
     },
     openAlert(row) {
       this.seenAlerts[this.alertKey(row)] = true;
@@ -304,6 +445,7 @@ const app = createApp({
       this.showSearch = false;
     },
     showToast(text, kind = 'success') {
+      if (this.toasts.some(toast => toast.text === text && toast.kind === kind)) return;
       const id = ++toastSequence;
       this.toasts.push({ id, text, kind });
       if (this.toasts.length > 3) this.closeToast(this.toasts[0].id);
@@ -359,14 +501,110 @@ const app = createApp({
       }
     },
 
-    // Navegação
+    // Navegação, com proteção de alterações não salvas em Configurações.
+    confirmDiscardSettings() {
+      if (this.activeMenu !== 'Configurações' || !this.settingsDirty) return true;
+      if (!window.confirm('Descartar alterações de configurações que ainda não foram salvas?')) return false;
+      this.settingsDraft = { ...this.preferences };
+      return true;
+    },
+    warnUnsaved(event) {
+      if (this.activeMenu !== 'Configurações' || !this.settingsDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    },
     goMenu(label) {
+      if (!this.menu.some(item => item.label === label)) return false;
+      if (label !== this.activeMenu && !this.confirmDiscardSettings()) return false;
       if (label === 'Máquinas') this.backToList();
       this.activeMenu = label;
+      return true;
     },
+    restoreMenu(event) {
+      if (!this.goMenu(event.state?.agroMenu || 'Início')) {
+        history.pushState({ ...history.state, agroMenu: this.activeMenu }, '');
+      }
+    },
+    goFromHome(label, target) {
+      this.goMenu(label);
+      this.$nextTick(() => {
+        const section = target ? document.querySelector('.main-panel ' + target) : null;
+        const focusEl = section ? section.querySelector('h2') : document.querySelector('.main-panel h1');
+        focusEl?.setAttribute('tabindex', '-1');
+        focusEl?.focus({ preventScroll: true });
+        if (section) section.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+        else window.scrollTo(0, 0);
+      });
+    },
+    machineIcon(category) {
+      return category === 'colheitadeira'
+        ? '<svg viewBox="0 0 28 20" aria-hidden="true"><circle cx="9" cy="15" r="3.4"/><circle cx="22" cy="16" r="2.4"/><path d="M1 5.5h4V14M5 5.5h5.5V3H19v6h5.5v5.5M10.5 3v6.5"/></svg>'
+        : '<svg viewBox="0 0 28 20" aria-hidden="true"><circle cx="8" cy="14" r="5"/><circle cx="23" cy="16" r="3"/><path d="M13 12.5h5.5M13 7.5V4h6l2.5 6.5h4V13M3 9h5"/></svg>';
+    },
+    issueView(m, issue) {
+      const lim = AgroData.LIMITS[m.category], f = AgroData.fmt, lvl = issue.level;
+      if (issue.key === 'temp') return { key: 'temp', level: lvl, metric: 'Temperatura do motor', value: f(m.temp, 1), unit: '°C', cmp: 'acima de', limit: f(lvl === 2 ? lim.temp.crit : lim.temp.warn, 0) };
+      if (issue.key === 'pressao') return { key: 'pressao', level: lvl, metric: 'Pressão do óleo', value: f(m.pressao, 2), unit: 'bar', cmp: 'abaixo de', limit: f(lvl === 2 ? lim.pressao.crit : lim.pressao.warn, 1) };
+      const low = m.rpm < lim.rpm.lo;
+      return { key: 'rpm', level: lvl, metric: 'Rotação', value: f(m.rpm, 0), unit: 'rpm', cmp: low ? 'abaixo de' : 'acima de', limit: f(low ? (lvl === 2 ? lim.rpm.critLo : lim.rpm.lo) : (lvl === 2 ? lim.rpm.critHi : lim.rpm.hi), 0) };
+    },
+    pickSector(name) { this.selectedSector = this.selectedSector === name ? '' : name; },
     openMachineById(id) {
       this.activeMenu = 'Máquinas';
       this.showMachine(id);
+    },
+
+    // Configurações: o mesmo adaptador será substituído pela API quando existir backend.
+    compareMachines(a, b) {
+      const byId = () => a.id.localeCompare(b.id, 'pt-BR', { numeric: true });
+      if (this.preferences.machineSort === 'sector') {
+        return a.setor.localeCompare(b.setor, 'pt-BR') || byId();
+      }
+      if (this.preferences.machineSort === 'severity') {
+        const rank = { crit: 0, warn: 1, ok: 2 };
+        return rank[this.evaluations[a.id].status] - rank[this.evaluations[b.id].status] || byId();
+      }
+      return byId();
+    },
+    rememberLiveTelemetry(field, value) {
+      if (this.preferences[field] === value) return;
+      const result = window.AgroPreferences.save(this.currentUser.id || this.currentUser.perfil, { ...this.preferences, [field]: value });
+      if (!result.ok) {
+        this.showToast('Não foi possível memorizar a preferência neste navegador.', 'error');
+        return;
+      }
+      const wasClean = !this.settingsDirty;
+      this.preferences = result.value;
+      if (wasClean) this.settingsDraft = { ...result.value };
+    },
+    applySettings(value) {
+      this.preferences = { ...value };
+      this.settingsDraft = { ...value };
+      this.chartKey = value.telemetryMetric;
+      this.telemetryScope = this.telemetryScopes.some(o => o.value === value.telemetryScope) ? value.telemetryScope : 'all';
+      this.telemetryOnlyAlerts = value.telemetryOnlyAlerts;
+      if (!value.internalNotifications) this.notice = false;
+    },
+    saveSettings() {
+      if (!this.settingsDirty) return;
+      const draft = { ...this.settingsDraft };
+      if (!this.telemetryScopes.some(o => o.value === draft.telemetryScope)) draft.telemetryScope = 'all';
+      const result = window.AgroPreferences.save(this.currentUser.id || this.currentUser.perfil, draft);
+      if (!result.ok) { this.showToast('Não foi possível salvar as preferências no navegador.', 'error'); return; }
+      this.applySettings(result.value);
+      this.showToast('Preferências salvas neste navegador.');
+    },
+    discardSettings() {
+      if (!this.settingsDirty) return;
+      this.settingsDraft = { ...this.preferences };
+      this.showToast('Alterações não salvas descartadas.');
+    },
+    resetSettings() {
+      if (!window.confirm('Restaurar todas as preferências para os valores padrão?')) return;
+      const result = window.AgroPreferences.restore(this.currentUser.id || this.currentUser.perfil);
+      if (!result.ok) { this.showToast('Não foi possível restaurar as preferências.', 'error'); return; }
+      this.applySettings(result.value);
+      this.showToast('Preferências padrão restauradas.');
     },
 
     // Simulação
@@ -421,6 +659,7 @@ const app = createApp({
       if (!m || !this.$refs.stage) return;
       viewer = new MachineViewer(this.$refs.stage, {
         type: m.category,
+        onInspect: () => { this.autoRotate = false; },
         autoRotate: this.autoRotate,
         issues: this.issuesFor(m)
       });
@@ -433,7 +672,7 @@ const app = createApp({
       if (viewer) viewer.setAutoRotate(this.autoRotate);
     },
     resetView() { if (viewer) viewer.resetView(); },
-    focusIssue(issue) { if (viewer) viewer.focus(issue.anchor); },
+    focusIssue(issue) { this.autoRotate = false; if (viewer) { viewer.setAutoRotate(false); viewer.focus(issue.anchor); } },
 
     // Cadastro de máquinas
     addMachine() {
@@ -489,4 +728,8 @@ const app = createApp({
 
 // Registra a diretiva na instância existente; não introduz outra dependência.
 app.directive('number-pop', numberPop);
+app.component('agro-chart', AgroChart);
+app.component('sector-chart', SectorChart);
+app.component('telemetry-chart', TelemetryChart);
+app.component('agro-select', AgroSelect);
 app.mount('#app');

@@ -1,0 +1,132 @@
+/* AgroSense — Home editorial V8.5. Identidade e logo oficiais preservados.
+   Um único ponto focal, atalhos de trabalho sem cards repetidos. */
+.app-shell .home-topbar {
+  align-items: center;
+  min-height: 49px;
+  margin-bottom: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.home-topbar .top-actions { margin-left: auto; }
+.home-topbar .sim-detail { display: none; }
+:where(.home-view) :is(h1, h2, p) { margin: 0; }
+.home-view { min-width: 0; }
+
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 78px);
+  min-height: 355px;
+  padding: clamp(46px, 6.5vw, 82px) 0 clamp(50px, 6.5vw, 80px);
+  border-bottom: 1px solid var(--line);
+}
+.home-hero-copy { min-width: 0; padding-left: 2px; }
+.home-title {
+  color: var(--ink);
+  font-size: clamp(32px, 3.1vw, 45px);
+  font-weight: 550;
+  letter-spacing: -.045em;
+  line-height: 1.13;
+  font-variant-numeric: normal;
+  text-wrap: balance;
+}
+.home-lead {
+  margin-top: 18px;
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: clamp(16px, 1.3vw, 18px);
+  line-height: 1.55;
+}
+.home-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 29px; }
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .17s ease, background-color .17s ease, border-color .17s ease;
+}
+.home-btn svg { width: 18px; height: 18px; flex: 0 0 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.home-btn-primary { background: var(--forest); border-color: var(--forest); color: #fff; }
+.home-btn-primary:hover { background: #254936; border-color: #254936; }
+.home-btn:focus-visible, .home-shortcut:focus-visible { outline: 2px solid var(--forest); outline-offset: 3px; }
+.home-hero-brand {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 205px;
+  padding: 25px 0 25px clamp(30px, 5vw, 67px);
+  border-left: 1px solid #DAE2DB;
+}
+.home-hero-brand img { display: block; width: min(100%, 340px); height: auto; object-fit: contain; }
+
+.home-shortcuts-head { margin-top: clamp(25px, 3vw, 41px); margin-bottom: 9px; }
+.home-shortcuts-head h2 { font-size: 18px; font-weight: 650; letter-spacing: -.025em; color: var(--ink); }
+.home-shortcuts { --bs-gutter-x: 0px; --bs-gutter-y: 0px; margin-top: 0; }
+.home-shortcuts > div { min-width: 0; }
+.home-shortcut {
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 15px;
+  align-items: center;
+  column-gap: 13px;
+  min-height: 93px;
+  height: 100%;
+  padding: 18px 20px 18px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color .17s ease, color .17s ease;
+}
+.home-shortcuts > div + div .home-shortcut { border-left: 1px solid var(--line); }
+.home-shortcut:hover { background: #EEF3EE; color: var(--forest); }
+.home-shortcut-icon { display: inline-flex; color: var(--ink-2); transition: color .17s ease; }
+.home-shortcut:hover .home-shortcut-icon { color: var(--forest); }
+.home-shortcut-icon svg { width: 29px; height: 29px; fill: none; stroke: currentColor; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; }
+.home-shortcut-text { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.home-shortcut-text b { font-size: 15px; font-weight: 650; line-height: 1.25; }
+.home-shortcut-text small { color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4; }
+.home-shortcut-arrow { color: #7D8C81; font-size: 16px; line-height: 1; transition: color .17s ease, transform .17s ease; }
+.home-shortcut:hover .home-shortcut-arrow { color: var(--forest); transform: translate(2px,-2px); }
+
+@media (max-width: 1199.98px) {
+  .home-shortcuts > div:nth-child(odd) .home-shortcut { border-left: 0; }
+  .home-shortcuts > div:nth-child(n+3) .home-shortcut { border-top: 0; }
+}
+@media (max-width: 991.98px) {
+  .home-hero { grid-template-columns: minmax(0,1fr) minmax(210px,.65fr); min-height: 310px; gap: 25px; }
+  .home-hero-brand { padding-left: 24px; min-height: 170px; }
+  .home-hero-brand img { max-width: 250px; }
+}
+@media (max-width: 767.98px) {
+  .home-hero { grid-template-columns: minmax(0,1fr); gap: 23px; min-height: 0; padding: 35px 0 39px; }
+  .home-hero-brand { justify-content: start; min-height: 0; padding: 17px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+  .home-hero-brand img { max-width: 244px; }
+  .home-shortcut { min-height: 85px; }
+}
+@media (max-width: 575.98px) {
+  .home-hero { padding: 31px 0 33px; }
+  .home-title { font-size: 34px; }
+  .home-actions { margin-top: 24px; }
+  .home-btn { width: auto; }
+  .home-shortcuts-head { margin-top: 26px; }
+  .home-shortcuts > div .home-shortcut, .home-shortcuts > div + div .home-shortcut { border-left: 0; }
+  .home-shortcut { min-height: 78px; padding: 14px 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-btn, .home-shortcut, .home-shortcut-icon, .home-shortcut-arrow { transition: none; }
+  .home-shortcut:hover .home-shortcut-arrow { transform: none; }
+}

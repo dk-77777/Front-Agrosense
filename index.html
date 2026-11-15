@@ -3,35 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#197f10">
+  <meta name="theme-color" content="#294D3E">
   <title>AgroSense</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="js/demo-auth.js"></script>
   <script>if (!window.AgroSenseAuth.session()) location.replace('login.html');</script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/premium.css">
+  <link rel="stylesheet" href="vendor/bootstrap-grid-5.3.3.min.css">
+  <link rel="stylesheet" href="css/v8.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/settings.css">
 </head>
 <body>
-  <div id="app" class="app-shell">
+  <div id="app">
+    <div class="app-shell" :class="{ 'ag-density-compact': preferences.density === 'compact', 'ag-text-large': preferences.textSize === 'large' }">
     <aside class="sidebar">
-      <div class="brand">AgroSense</div>
+      <div class="brand"><img src="assets/img/logo-agrosense.svg" alt="AgroSense" width="128" height="27"></div>
       <nav class="main-nav" aria-label="Menu principal">
         <a v-for="item in menu" :key="item.label"
-           href="#" class="nav-item" :class="{ active: activeMenu === item.label }"
+           href="#" :aria-current="activeMenu === item.label ? 'page' : undefined" class="nav-item" :class="{ active: activeMenu === item.label }"
            @click.prevent="goMenu(item.label)">
           <span class="nav-icon" v-html="item.icon"></span>
           <span>{{ item.label }}</span>
         </a>
       </nav>
-      <div class="sidebar-footer">
-        <a href="#">Facebook</a><a href="#">Twitter</a><a href="#">Google</a>
-      </div>
+      <div class="sidebar-footer"><span class="side-avatar" aria-hidden="true">{{ userInitials }}</span><div class="side-user"><b>{{ currentUser.nome }}</b><small>{{ userProfileLabel }}</small></div></div>
     </aside>
 
     <main class="main-panel">
-      <header class="topbar">
+      <header class="topbar" :class="{ 'home-topbar': activeMenu === 'Início' }">
         <div v-if="activeMenu === 'Máquinas' && currentMachine">
           <button type="button" class="back-link" @click="backToList"><span aria-hidden="true">‹</span> Máquinas</button>
           <h1>{{ currentMachine.id }} - {{ currentMachine.name }}</h1>
@@ -40,30 +43,31 @@
             <span class="status-pill" :class="evaluations[currentMachine.id].status">{{ evaluations[currentMachine.id].label }}</span>
           </p>
         </div>
-        <div v-else>
+        <div v-else-if="activeMenu !== 'Início'">
           <h1>{{ activeMenu }}</h1>
           <p class="subtitle">{{ pageSubtitle }}</p>
         </div>
         <div class="top-actions">
+          <span class="sim-pill" title="Os dados são gerados no navegador; não há servidor de telemetria"><i aria-hidden="true"></i><span>Simulação local<span class="sim-detail"> · atualiza a cada 2 s</span></span></span>
           <div class="notification-area" ref="notificationArea">
-            <button type="button" class="icon-button notification" data-tooltip="Notificações" :aria-label="'Notificações: ' + unreadAlerts + ' não lidas'"
+            <button type="button" class="icon-button notification" :data-tooltip="preferences.internalNotifications ? 'Notificações' : 'Avisos internos desativados'" :aria-label="preferences.internalNotifications ? 'Notificações: ' + unreadAlerts + ' não lidas' : 'Avisos internos desativados'"
                     :aria-expanded="notice" aria-controls="notification-center" @click.stop="toggleNotice">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
               <Transition name="ag-badge">
-                <span v-if="unreadAlerts" :key="unreadAlerts" class="notification-count" aria-hidden="true">{{ unreadAlerts > 99 ? '99+' : unreadAlerts }}</span>
+                <span v-if="unreadAlerts && preferences.internalNotifications" :key="unreadAlerts" class="notification-count" aria-hidden="true">{{ unreadAlerts > 99 ? '99+' : unreadAlerts }}</span>
               </Transition>
             </button>
             <Transition name="ag-popover">
               <section v-if="notice" id="notification-center" class="notice-popover" aria-label="Central de notificações" @click.stop>
                 <div class="notice-head">
-                  <div><h2>Notificações</h2><p>{{ alertCount }} {{ alertCount === 1 ? 'alerta ativo' : 'alertas ativos' }} · dados simulados</p></div>
+                  <div><h2>Notificações</h2><p>{{ notificationRows.length }} {{ notificationRows.length === 1 ? 'aviso visível' : 'avisos visíveis' }} · dados simulados</p></div>
                   <button type="button" class="notice-close" aria-label="Fechar notificações" @click="notice = false">×</button>
                 </div>
                 <div class="notice-toolbar" v-if="unreadAlerts">
                   <button type="button" @click="markAllAlertsRead">Marcar todas como lidas</button>
                 </div>
-                <TransitionGroup v-if="attentionList.length" name="ag-list" tag="ul" class="notice-list">
-                  <li v-for="row in attentionList" :key="row.m.id" :class="{ 'is-read': isAlertRead(row) }">
+                <TransitionGroup v-if="notificationRows.length" name="ag-list" tag="ul" class="notice-list">
+                  <li v-for="row in notificationRows" :key="row.m.id" :class="{ 'is-read': isAlertRead(row) }">
                     <button type="button" class="notice-item" @click="openAlert(row)">
                       <span class="notice-severity" :class="row.ev.status"></span>
                       <span class="notice-item-content"><strong>{{ row.m.id }} · {{ row.m.name }}</strong>
@@ -74,7 +78,7 @@
                     </button>
                   </li>
                 </TransitionGroup>
-                <div v-else class="notice-empty"><span class="notice-empty-icon" aria-hidden="true">✓</span><strong>Tudo em ordem</strong><p>Nenhuma máquina com alerta no momento.</p></div>
+                <div v-else class="notice-empty"><span class="notice-empty-icon" aria-hidden="true">✓</span><strong>{{ preferences.internalNotifications ? 'Sem avisos neste filtro' : 'Avisos internos desativados' }}</strong><p>Os alertas operacionais continuam disponíveis no Dashboard.</p></div>
               </section>
             </Transition>
           </div>
@@ -89,7 +93,8 @@
               <section v-if="profileOpen" id="profile-info" class="profile-popover" aria-label="Informações da demonstração" @click.stop>
                 <strong>{{ currentUser.nome }}</strong><span>{{ userProfileLabel }} · Demonstração</span>
                 <p>Acesso local demonstrativo; as permissões não são aplicadas por um servidor.</p>
-                <button type="button" class="ag-signout" @click="logout">Sair da conta <span aria-hidden="true">↗</span></button>
+                <button type="button" class="ag-profile-settings" @click="profileOpen = false; goMenu('Configurações')">Configurações <span aria-hidden="true">›</span></button>
+          <button type="button" class="ag-signout" @click="logout">Sair da conta <span aria-hidden="true">↗</span></button>
               </section>
             </Transition>
           </div>
@@ -102,77 +107,143 @@
         </div>
       </Transition>
 
+      <!-- ========== Início ========== -->
+      <div v-if="activeMenu === 'Início'" class="home-view">
+        <section class="home-hero" aria-labelledby="home-title">
+          <div class="home-hero-copy">
+            <h1 id="home-title" class="home-title">Bem-vindo, {{ currentUser.nome }}.</h1>
+            <p class="home-lead">Acompanhe equipamentos, alertas e manutenções.</p>
+            <div class="home-actions">
+              <button type="button" class="home-btn home-btn-primary" @click="goFromHome('Dashboard')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>Monitoramento
+              </button>
+            </div>
+          </div>
+          <div class="home-hero-brand">
+            <img src="assets/img/agrosense-logo-oficial.png" alt="AgroSense" width="2172" height="724">
+          </div>
+        </section>
+
+        <div class="home-shortcuts-head"><h2>Acessos rápidos</h2></div>
+        <nav class="home-shortcuts row" aria-label="Acessos rápidos">
+          <div v-for="item in homeShortcuts" :key="item.key" :class="homeShortcutCol">
+            <a href="#" class="home-shortcut" @click.prevent="goFromHome(item.menu, item.target)">
+              <span class="home-shortcut-icon" v-html="item.icon"></span>
+              <span class="home-shortcut-text"><b>{{ item.label }}</b><small>{{ item.text }}</small></span>
+              <span class="home-shortcut-arrow" aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </nav>
+      </div>
+
       <!-- ========== Dashboard ========== -->
-      <div v-if="activeMenu === 'Dashboard'" class="dashboard-view">
-        <section class="fleet-strip" aria-label="Situação da frota">
-          <div class="fleet-stat"><b v-number-pop="counts.total">{{ counts.total }}</b><span>Máquinas</span></div>
-          <div class="fleet-stat ok"><b v-number-pop="counts.ok">{{ counts.ok }}</b><span>Normais</span></div>
-          <div class="fleet-stat warn"><b v-number-pop="counts.warn">{{ counts.warn }}</b><span>Em atenção</span></div>
-          <div class="fleet-stat crit"><b v-number-pop="counts.crit">{{ counts.crit }}</b><span>Críticas</span></div>
+      <div v-else-if="activeMenu === 'Dashboard'" class="dashboard-view">
+        <section class="kpi-row" aria-label="Situação da frota">
+          <div class="kpi kpi-fleet">
+            <span class="kpi-label">Máquinas</span>
+            <b v-number-pop="counts.total">{{ counts.total }}</b>
+            <dl class="kpi-split"><div v-for="x in fleetSplit" :key="x.label"><dd>{{ x.value }}</dd><dt>{{ x.label }}</dt></div></dl>
+          </div>
+          <div class="kpi kpi-ok">
+            <span class="kpi-label">Normais</span>
+            <b v-number-pop="counts.ok">{{ counts.ok }}</b>
+            <span class="kpi-meta">{{ okShare }}% da frota</span>
+            <span class="kpi-note">Dentro dos limites</span>
+          </div>
+          <button type="button" class="kpi kpi-warn" @click="alertFilter = alertFilter === 'warn' ? 'all' : 'warn'" :aria-pressed="alertFilter === 'warn'">
+            <span class="kpi-label">Em atenção</span>
+            <b v-number-pop="counts.warn">{{ counts.warn }}</b>
+            <span class="kpi-meta">{{ issueTotals.warn }} {{ issueTotals.warn === 1 ? 'leitura' : 'leituras' }} fora da faixa</span>
+            <span class="kpi-act">{{ alertFilter === 'warn' ? 'Limpar filtro' : 'Filtrar lista' }}</span>
+          </button>
+          <button type="button" class="kpi kpi-crit" @click="alertFilter = alertFilter === 'crit' ? 'all' : 'crit'" :aria-pressed="alertFilter === 'crit'">
+            <span class="kpi-label"><span aria-hidden="true">▲ </span>Críticas</span>
+            <b v-number-pop="counts.crit">{{ counts.crit }}</b>
+            <span class="kpi-meta">{{ issueTotals.crit }} {{ issueTotals.crit === 1 ? 'leitura' : 'leituras' }} em nível crítico</span>
+            <span class="kpi-act">{{ alertFilter === 'crit' ? 'Limpar filtro' : 'Filtrar lista' }}</span>
+          </button>
+        </section>
+
+        <section class="panel alerts-panel">
+            <header class="panel-head">
+              <div><h2>Equipamentos que precisam de atenção</h2><p class="panel-sub">{{ alertCount }} {{ alertCount === 1 ? 'máquina' : 'máquinas' }} · {{ issueTotals.crit + issueTotals.warn }} leituras fora da faixa</p></div>
+              <div class="seg" role="group" aria-label="Filtrar por gravidade">
+                <button type="button" :aria-pressed="alertFilter === 'all'" @click="alertFilter = 'all'">Todas</button>
+                <button type="button" :aria-pressed="alertFilter === 'crit'" @click="alertFilter = 'crit'">Críticas</button>
+                <button type="button" :aria-pressed="alertFilter === 'warn'" @click="alertFilter = 'warn'">Atenção</button>
+              </div>
+            </header>
+            <ul v-if="alertRows.length" class="alert-list">
+              <li class="alert-cols" aria-hidden="true"><span>Gravidade</span><span>Equipamento</span><span>Métrica</span><span class="r">Leitura</span><span>Limite</span><span></span></li>
+              <li v-for="row in alertRows" :key="row.m.id" class="alert-item">
+                <div class="alert-line">
+                  <span class="sev-badge" :class="row.ev.status"><i aria-hidden="true">{{ row.ev.status === 'crit' ? '▲' : '●' }}</i>{{ row.ev.status === 'crit' ? 'Crítico' : 'Atenção' }}</span>
+                  <button type="button" class="eq" :aria-label="'Abrir detalhes de ' + row.m.id" @click="openMachineById(row.m.id)">
+                    <span class="eq-ico" v-html="machineIcon(row.m.category)"></span>
+                    <span class="eq-txt"><span class="eq-l1"><b>{{ row.m.id }}</b> {{ row.m.name }}</span><small>{{ row.m.setor }}</small></span>
+                  </button>
+                  <span class="a-metric">{{ row.views[0].metric }}</span>
+                  <span class="a-read" :class="'l' + row.views[0].level">{{ row.views[0].value }}<small>{{ row.views[0].unit }}</small></span>
+                  <span class="a-limit">{{ row.views[0].cmp }} {{ row.views[0].limit }} {{ row.views[0].unit }}</span>
+                  <button v-if="row.views.length > 1" type="button" class="more" :aria-expanded="!!expandedAlerts[row.m.id]" :aria-controls="'more-' + row.m.id" :aria-label="(expandedAlerts[row.m.id] ? 'Ocultar' : 'Mostrar') + ' outros ' + (row.views.length - 1) + ' desvios de ' + row.m.id" @click="expandedAlerts[row.m.id] = !expandedAlerts[row.m.id]">+{{ row.views.length - 1 }}</button>
+                  <span v-else></span>
+                </div>
+                <ul v-if="expandedAlerts[row.m.id]" :id="'more-' + row.m.id" class="alert-sub">
+                  <li v-for="v in row.views.slice(1)" :key="v.key" class="alert-line sub">
+                    <span class="sev-badge" :class="v.level === 2 ? 'crit' : 'warn'"><i aria-hidden="true">{{ v.level === 2 ? '▲' : '●' }}</i>{{ v.level === 2 ? 'Crítico' : 'Atenção' }}</span>
+                    <span></span>
+                    <span class="a-metric">{{ v.metric }}</span>
+                    <span class="a-read" :class="'l' + v.level">{{ v.value }}<small>{{ v.unit }}</small></span>
+                    <span class="a-limit">{{ v.cmp }} {{ v.limit }} {{ v.unit }}</span>
+                    <span></span>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <p v-else-if="attentionList.length" class="no-issue">Nenhuma máquina neste filtro.</p>
+            <p v-else class="no-issue">Nenhuma máquina com alerta agora.</p>
         </section>
 
         <div class="dash-grid">
-          <section class="panel">
-            <h2>Precisam de atenção</h2>
-            <ul v-if="attentionList.length" class="attn-list">
-              <li v-for="row in attentionList" :key="row.m.id">
-                <button type="button" class="attn-row" @click="openMachineById(row.m.id)">
-                  <span class="attn-dot" :class="row.ev.status"></span>
-                  <span class="attn-main"><b>{{ row.m.id }}</b> {{ row.m.name }}<small>{{ row.m.setor }}</small></span>
-                  <span class="attn-text">{{ row.ev.issues[0].text }}<span v-if="row.ev.issues.length > 1"> (mais {{ row.ev.issues.length - 1 }})</span></span>
-                  <span class="go" aria-hidden="true">›</span>
-                </button>
-              </li>
-            </ul>
-            <p v-else class="no-issue">Nenhuma máquina com alerta agora.</p>
+          <section class="panel sector-panel">
+            <header class="panel-head">
+              <div><h2>Estado por setor</h2><p class="panel-sub">Clique numa coluna para listar os equipamentos</p></div>
+            </header>
+            <sector-chart v-if="sectorRows.length" :rows="sectorRows" :selected="selectedSector" @select="pickSector"></sector-chart>
+            <p v-else class="no-issue">Nenhum setor cadastrado. Adicione um em Cadastro.</p>
+            <div v-if="selectedSector" class="sector-detail">
+              <div class="sector-detail-head"><b>{{ selectedSector }}</b><button type="button" class="link-btn" @click="pickSector(selectedSector)">Limpar seleção</button></div>
+              <ul v-if="sectorMachines.length">
+                <li v-for="row in sectorMachines" :key="row.m.id"><button type="button" @click="openMachineById(row.m.id)">
+                  <span class="sev-badge" :class="row.ev.status"><i aria-hidden="true">{{ row.ev.status === 'crit' ? '▲' : row.ev.status === 'warn' ? '●' : '✓' }}</i>{{ row.ev.status === 'crit' ? 'Crítico' : row.ev.status === 'warn' ? 'Atenção' : 'Normal' }}</span>
+                  <span class="sd-eq"><b>{{ row.m.id }}</b> {{ row.m.name }}</span>
+                  <span class="sd-note">{{ row.ev.issues.length ? issueView(row.m, row.ev.issues[0]).metric : 'Sem desvios' }}</span>
+                </button></li>
+              </ul>
+              <p v-else class="no-issue">Sem máquinas neste setor.</p>
+            </div>
           </section>
 
-          <section class="panel">
-            <h2>Por setor</h2>
-            <ul v-if="sectorRows.length" class="sector-list">
-              <li v-for="row in sectorRows" :key="row.s.nome" class="sector-row">
-                <div class="sector-top">
-                  <b>{{ row.s.nome }}</b>
-                  <span>{{ row.total }} {{ row.total === 1 ? 'máquina' : 'máquinas' }}</span>
-                </div>
-                <template v-if="row.total">
-                  <div class="sector-bar" role="img" :aria-label="row.ok + ' normais, ' + row.warn + ' em atenção, ' + row.crit + ' críticas'">
-                    <i class="seg ok" :style="{ width: row.pct.ok + '%' }"></i><i class="seg warn" :style="{ width: row.pct.warn + '%' }"></i><i class="seg crit" :style="{ width: row.pct.crit + '%' }"></i>
-                  </div>
-                  <small>{{ row.ok }} normais, {{ row.warn }} em atenção, {{ row.crit }} críticas</small>
-                </template>
-                <small v-else>Sem máquinas cadastradas.</small>
-              </li>
-            </ul>
-            <p v-else class="no-issue">Nenhum setor cadastrado. Adicione um em Cadastro.</p>
+          <section class="panel telemetry-panel">
+          <header class="panel-head">
+            <div><h2>Telemetria por máquina</h2><p class="panel-sub">Últimos 80 s · {{ telemetry.series.length }} de {{ telemetry.scopeTotal }} {{ telemetry.scopeTotal === 1 ? 'máquina' : 'máquinas' }} · {{ telemetry.outCount }} fora da faixa neste sensor</p></div>
+          </header>
+          <div class="tele-controls">
+            <div class="seg" role="group" aria-label="Sensor">
+              <button v-for="t in chartTabs" :key="t.key" type="button" :aria-pressed="chartKey === t.key" @click="chartKey = t.key">{{ t.label }}</button>
+            </div>
+            <div class="tele-scope"><agro-select v-model="telemetryScope" :options="telemetryScopes" label="Escopo da telemetria"></agro-select></div>
+            <label class="tele-check"><input type="checkbox" v-model="telemetryOnlyAlerts"> Só máquinas fora da faixa</label>
+          </div>
+          <telemetry-chart v-if="telemetry.series.length" :series="telemetry.series" :limits="telemetry.limits" :meta="telemetry.meta"></telemetry-chart>
+          <p v-else class="tele-empty">{{ telemetry.emptyText }}</p>
+          <p v-if="telemetry.limitHint && telemetry.series.length" class="tele-hint">Os limites variam por categoria. Escolha Tratores, Colheitadeiras ou uma máquina para ver as linhas de limite.</p>
+          <ul v-if="telemetry.series.length" class="tele-chips" aria-label="Leitura atual por máquina">
+            <li v-for="x in telemetry.series" :key="x.id"><button type="button" :class="'l' + x.level" :aria-pressed="telemetryScope === 'm:' + x.id" @click="telemetryScope = telemetryScope === 'm:' + x.id ? 'all' : 'm:' + x.id" :title="x.name"><span class="chip-sym" aria-hidden="true">{{ x.level === 2 ? '▲' : x.level === 1 ? '●' : '✓' }}</span><b>{{ x.id }}</b>{{ fmt(x.now, telemetry.meta.digits) }} {{ telemetry.meta.unit }}</button></li>
+          </ul>
+          <p class="sim-note">Leituras simuladas no navegador. Limites de exemplo por categoria; nada é consultado em servidor.</p>
           </section>
         </div>
-
-        <section class="panel chart-panel">
-          <div class="chart-head">
-            <h2>Média da frota nos últimos 80 segundos</h2>
-            <div class="tabs chart-tabs">
-              <button v-for="t in chartTabs" :key="t.key" :class="{ selected: chartKey === t.key }" @click="chartKey = t.key">{{ t.label }}</button>
-            </div>
-          </div>
-          <div v-if="chart.lines.length" class="chart-body">
-            <div class="chart-y">
-              <span>{{ fmt(chart.max, chartMeta.digits) }}</span>
-              <span>{{ fmt(chart.mid, chartMeta.digits) }}</span>
-              <span>{{ fmt(chart.min, chartMeta.digits) }}</span>
-            </div>
-            <svg class="chart-svg" viewBox="0 0 600 170" preserveAspectRatio="none" role="img" :aria-label="'Gráfico de ' + chartMeta.label">
-              <line x1="0" y1="12" x2="600" y2="12" class="grid"/>
-              <line x1="0" y1="85" x2="600" y2="85" class="grid"/>
-              <line x1="0" y1="158" x2="600" y2="158" class="grid"/>
-              <polyline v-for="l in chart.lines" :key="l.key" :class="'chart-line line-' + l.key" :points="l.points"/>
-            </svg>
-          </div>
-          <ul class="chart-legend">
-            <li v-for="l in chart.lines" :key="l.key"><i :class="'line-' + l.key"></i>{{ l.label }} <b>{{ fmt(l.last, chartMeta.digits) }} {{ chartMeta.unit }}</b></li>
-          </ul>
-          <p class="sim-note">Leituras simuladas.</p>
-        </section>
       </div>
 
       <!-- ========== Máquinas ========== -->
@@ -185,6 +256,9 @@
             <div class="viewer-tools">
               <button type="button" @click="toggleRotate">{{ autoRotate ? 'Parar giro' : 'Girar sozinha' }}</button>
               <button type="button" @click="resetView">Vista inicial</button>
+              <button type="button" @click="focusIssue({anchor:'motor'})">Motor</button>
+              <button type="button" @click="focusIssue({anchor:'transmissao'})">Transmissão</button>
+              <button type="button" @click="focusIssue({anchor:'hidraulica'})">Hidráulica</button>
             </div>
             <p class="viewer-hint">Arraste para girar, role para aproximar</p>
           </div>
@@ -192,7 +266,7 @@
           <div class="detail-side">
             <div class="panel">
               <h2>Leituras agora</h2>
-              <div v-for="r in readings(currentMachine)" :key="r.key" class="reading" :class="'lvl-' + r.level">
+              <div v-for="r in readings(currentMachine)" :key="r.key" class="a-read" :class="'lvl-' + r.level">
                 <div>
                   <div class="reading-name">{{ r.label }}</div>
                   <div class="reading-value">{{ r.value }}<small>{{ r.unit }}</small></div>
@@ -244,7 +318,6 @@
                 {{ tab }}
               </button>
             </div>
-            <div class="live-note"><i></i>Dados simulados, atualizam a cada 2 s</div>
           </section>
 
           <section v-for="group in groupedMachines" :key="group.key" class="machine-group">
@@ -273,9 +346,9 @@
                     <td class="machine-id">{{ m.id }}</td>
                     <td class="machine-name">{{ m.name }}<small>{{ m.modelo }}</small></td>
                     <td class="address">{{ m.setor }}</td>
-                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.temp">{{ fmt(m.temp, 1) }} °C</td>
-                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.rpm">{{ fmt(m.rpm, 0) }} rpm</td>
-                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.pressao">{{ fmt(m.pressao, 2) }} bar</td>
+                    <td class="a-metric" :class="'lvl-' + evaluations[m.id].levels.temp">{{ fmt(m.temp, 1) }} °C</td>
+                    <td class="a-metric" :class="'lvl-' + evaluations[m.id].levels.rpm">{{ fmt(m.rpm, 0) }} rpm</td>
+                    <td class="a-metric" :class="'lvl-' + evaluations[m.id].levels.pressao">{{ fmt(m.pressao, 2) }} bar</td>
                     <td><span class="status" :class="evaluations[m.id].status"><i></i>{{ evaluations[m.id].label }}</span></td>
                     <td class="go" aria-hidden="true">›</td>
                   </tr>
@@ -303,9 +376,7 @@
             <div class="form-grid">
               <label class="field">
                 <span>Categoria</span>
-                <select v-model="form.category">
-                  <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.key === 'trator' ? 'Trator' : 'Colheitadeira' }}</option>
-                </select>
+                <agro-select v-model="form.category" label="Categoria" :options="categories.map(c => ({value:c.key,label:c.key === 'trator' ? 'Trator' : 'Colheitadeira'}))"></agro-select>
               </label>
               <label class="field">
                 <span>Número da máquina</span>
@@ -322,10 +393,7 @@
               </label>
               <label class="field">
                 <span>Setor</span>
-                <select v-model="form.setor" :disabled="!sectors.length">
-                  <option v-if="!sectors.length" value="">Nenhum setor cadastrado</option>
-                  <option v-for="s in sectors" :key="s.nome" :value="s.nome">{{ s.nome }}</option>
-                </select>
+                <agro-select v-model="form.setor" label="Setor" :disabled="!sectors.length" :options="sectors.map(s => ({value:s.nome,label:s.nome}))"></agro-select>
               </label>
               <label class="field">
                 <span>Ano</span>
@@ -345,9 +413,7 @@
               </label>
               <label class="field">
                 <span>Como o simulador deve se comportar</span>
-                <select v-model="form.behavior">
-                  <option v-for="b in behaviors" :key="b.key" :value="b.key">{{ b.label }}</option>
-                </select>
+                <agro-select v-model="form.behavior" label="Comportamento do simulador" :options="behaviors.map(b => ({value:b.key,label:b.label}))"></agro-select>
               </label>
             </div>
             <p v-if="formError" class="form-msg err" role="alert">{{ formError }}</p>
@@ -416,21 +482,154 @@
       </div>
 
       <!-- ========== Relatórios ========== -->
+      <!-- ========== Configurações ========== -->
+      <div v-else-if="activeMenu === 'Configurações'" class="settings-view">
+        <div class="settings-intro">
+          <p class="settings-intro-note">Ajustes pessoais para facilitar o trabalho com máquinas, leituras e avisos.</p>
+          <span class="settings-storage" title="As preferências são armazenadas localmente, sem sincronização em servidor">Preferências neste navegador</span>
+        </div>
+
+        <div class="settings-layout">
+          <nav class="settings-subnav" aria-label="Categorias de configurações">
+            <span class="settings-subnav-title">Categorias</span>
+            <button v-for="tab in settingsTabs" :key="tab.key" type="button" class="settings-nav-button"
+                    :aria-current="settingsTab === tab.key ? 'true' : undefined"
+                    @click="settingsTab = tab.key">
+              <span class="settings-nav-icon" v-html="tab.icon" aria-hidden="true"></span>
+              <span class="settings-nav-label">{{ tab.label }}</span>
+              <svg class="settings-nav-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+            </button>
+          </nav>
+
+          <section class="settings-paper" aria-labelledby="settings-section-title">
+            <div class="settings-paper-body">
+              <div class="settings-section-top">
+                <h2 id="settings-section-title">{{ settingsCurrentTab.title || settingsCurrentTab.label }}</h2>
+                <p v-if="settingsTab === 'account'">Informações da conta usada nesta sessão.</p>
+                <p v-else-if="settingsTab === 'appearance'">Escolha o ritmo de leitura e o espaçamento mais confortável para o seu trabalho.</p>
+                <p v-else-if="settingsTab === 'notifications'">Controle os avisos exibidos no topo, sem interromper o monitoramento das máquinas.</p>
+                <p v-else>Escolha como as informações serão organizadas ao abrir os painéis.</p>
+              </div>
+
+              <Transition name="settings-switch" mode="out-in">
+              <div :key="settingsTab">
+              <div v-if="settingsTab === 'account'">
+                <div class="settings-account-identity">
+                  <span class="settings-account-avatar" aria-hidden="true">{{ userInitials }}</span>
+                  <div class="settings-account-name"><strong>{{ currentUser.nome }}</strong><span>Conta de demonstração</span></div>
+                  <span class="settings-account-role">{{ userProfileLabel }}</span>
+                </div>
+                <dl class="settings-details">
+                  <div v-if="currentUser.email"><dt>E-mail</dt><dd>{{ currentUser.email }}</dd></div>
+                  <div><dt>Tipo de acesso</dt><dd>{{ userProfileLabel }} · individual</dd></div>
+                  <div><dt>Preferências</dt><dd>Armazenadas neste dispositivo</dd></div>
+                </dl>
+                <div class="settings-account-footer">
+                  <p>Os dados do perfil são somente para consulta. Alteração de dados e senha dependerá de autenticação em servidor.</p>
+                  <button class="settings-signout" type="button" @click="logout">Sair da conta</button>
+                </div>
+              </div>
+
+              <div v-else-if="settingsTab === 'appearance'">
+                <div class="settings-rows">
+                  <div class="settings-row">
+                    <div><h3>Densidade da interface</h3><p>Alterne entre listas mais espaçosas ou uma visão com mais linhas.</p></div>
+                    <div class="settings-control"><div class="settings-toggle-group" role="group" aria-label="Densidade da interface">
+                      <button type="button" :aria-pressed="settingsDraft.density === 'comfortable'" @click="settingsDraft.density = 'comfortable'">Confortável</button>
+                      <button type="button" :aria-pressed="settingsDraft.density === 'compact'" @click="settingsDraft.density = 'compact'">Compacta</button>
+                    </div></div>
+                  </div>
+                  <div class="settings-row">
+                    <div><h3>Tamanho de texto</h3><p>Aumenta a fonte nas áreas operacionais para facilitar a leitura.</p></div>
+                    <div class="settings-control"><div class="settings-toggle-group" role="group" aria-label="Tamanho do texto">
+                      <button type="button" :aria-pressed="settingsDraft.textSize === 'standard'" @click="settingsDraft.textSize = 'standard'">Padrão</button>
+                      <button type="button" :aria-pressed="settingsDraft.textSize === 'large'" @click="settingsDraft.textSize = 'large'">Ampliado</button>
+                    </div></div>
+                  </div>
+                  <div class="settings-row">
+                    <div><h3>Tema</h3><p>O tema claro é mantido em todas as áreas do AgroSense.</p></div>
+                    <div class="settings-control"><span class="settings-fixed"><span class="settings-theme-swatch" aria-hidden="true"></span> Claro <small>· Padrão do sistema</small></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else-if="settingsTab === 'notifications'">
+                <div class="settings-rows">
+                  <label class="settings-checkrow">
+                    <span><strong>Exibir avisos internos</strong><small>Mostra as ocorrências na central de notificações do topo.</small></span>
+                    <input type="checkbox" v-model="settingsDraft.internalNotifications" aria-label="Exibir avisos internos">
+                  </label>
+                  <label class="settings-checkrow">
+                    <span><strong>Avisos de atenção</strong><small>Inclui na central as máquinas com leituras em nível de atenção.</small></span>
+                    <input type="checkbox" v-model="settingsDraft.attentionNotices" :disabled="!settingsDraft.internalNotifications" aria-label="Mostrar avisos de atenção">
+                  </label>
+                  <label class="settings-checkrow">
+                    <span><strong>Avisos críticos</strong><small>Inclui na central os avisos críticos; os registros operacionais são sempre preservados.</small></span>
+                    <input type="checkbox" v-model="settingsDraft.criticalNotices" :disabled="!settingsDraft.internalNotifications" aria-label="Mostrar avisos críticos">
+                  </label>
+                </div>
+                <p class="settings-hint">Essas opções ajustam apenas a apresentação dos avisos na central. O Dashboard, a classificação dos sensores e o histórico de eventos não são afetados.</p>
+              </div>
+
+              <div v-else-if="settingsTab === 'view'">
+                <div class="settings-rows">
+                  <div class="settings-row">
+                    <div><label for="settings-machine-sort" class="settings-row-label">Ordenação das máquinas</label><p>Organiza as tabelas dentro de cada categoria, sem remover os filtros.</p></div>
+                    <div class="settings-control"><select id="settings-machine-sort" class="settings-select" v-model="settingsDraft.machineSort">
+                      <option value="id">Por identificação</option>
+                      <option value="sector">Por setor</option>
+                      <option value="severity">Por criticidade</option>
+                    </select></div>
+                  </div>
+                  <div class="settings-row">
+                    <div><label for="settings-metric" class="settings-row-label">Métrica de telemetria</label><p>Sensor selecionado ao abrir o Dashboard.</p></div>
+                    <div class="settings-control"><select id="settings-metric" class="settings-select" v-model="settingsDraft.telemetryMetric">
+                      <option value="temp">Temperatura</option>
+                      <option value="rpm">Rotação</option>
+                      <option value="pressao">Pressão do óleo</option>
+                    </select></div>
+                  </div>
+                  <div class="settings-row">
+                    <div><label for="settings-scope" class="settings-row-label">Escopo da telemetria</label><p>Memoriza uma categoria ou máquina específica quando disponível.</p></div>
+                    <div class="settings-control"><select id="settings-scope" class="settings-select" v-model="settingsDraft.telemetryScope">
+                      <option v-for="option in telemetryScopes" :key="option.value" :value="option.value">{{ option.label }}</option>
+                    </select></div>
+                  </div>
+                  <div class="settings-row">
+                    <div><h3>Somente leituras fora da faixa</h3><p>Ao ativar, filtra o gráfico para as máquinas em alerta no sensor selecionado.</p></div>
+                    <div class="settings-control"><label class="settings-checkrow settings-checkrow-inline">
+                      <span class="settings-checkrow-inline-label">Aplicar filtro</span>
+                      <input type="checkbox" v-model="settingsDraft.telemetryOnlyAlerts" aria-label="Mostrar somente leituras fora da faixa">
+                    </label></div>
+                  </div>
+                </div>
+                <p class="settings-hint">Mudanças feitas diretamente nos filtros do Dashboard também são lembradas neste navegador. Os dados e os limites dos sensores não são modificados.</p>
+              </div>
+              </div>
+              </Transition>
+            </div>
+
+            <div class="settings-actions" v-if="settingsTab !== 'account' || settingsDirty">
+              <span class="settings-actions-meta" :class="{ 'is-pending': settingsDirty }" role="status" aria-live="polite">{{ settingsDirty ? 'Alterações não salvas' : 'Preferências atualizadas' }}</span>
+              <div class="settings-actions-buttons">
+                <button class="settings-button settings-button-quiet" type="button" @click="resetSettings">Restaurar padrões</button>
+                <button v-if="settingsDirty" class="settings-button" type="button" @click="discardSettings">Descartar</button>
+                <button class="settings-button settings-button-primary" type="button" :disabled="!settingsDirty" @click="saveSettings">Salvar alterações</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
       <div v-else class="report-view">
         <section class="report-controls">
           <label class="field inline">
             <span>Setor</span>
-            <select v-model="reportSetor">
-              <option>Todos</option>
-              <option v-for="s in sectors" :key="s.nome">{{ s.nome }}</option>
-            </select>
+            <agro-select v-model="reportSetor" label="Setor do relatório" :options="[{value:'Todos',label:'Todos'}, ...sectors.map(s => ({value:s.nome,label:s.nome}))]"></agro-select>
           </label>
           <label class="field inline">
             <span>Categoria</span>
-            <select v-model="reportCategoria">
-              <option value="Todas">Todas</option>
-              <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.label }}</option>
-            </select>
+            <agro-select v-model="reportCategoria" label="Categoria do relatório" :options="[{value:'Todas',label:'Todas'}, ...categories.map(c => ({value:c.key,label:c.label}))]"></agro-select>
           </label>
           <div class="report-buttons">
             <button type="button" class="btn ghost" @click="resetRecord">Zerar registro</button>
@@ -520,7 +719,7 @@
         </article>
       </div>
 
-      <footer>© 2026 AgroSense</footer>
+      <footer v-if="activeMenu !== 'Início'">© 2026 AgroSense</footer>
     </main>
 
   <TransitionGroup name="ag-toast" tag="div" class="toast-stack" aria-label="Avisos do sistema">
@@ -546,12 +745,17 @@
       </section>
     </div>
   </Transition>
+    </div>
   </div>
 
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="js/machines.js"></script>
+  <script src="js/preferences.js"></script>
   <script src="js/viewer3d.js"></script>
+  <script src="vendor/echarts.min.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/select.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
