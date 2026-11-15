@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#197f10">
+  <meta name="theme-color" content="#294D3E">
   <title>AgroSense</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,27 +12,27 @@
   <script>if (!window.AgroSenseAuth.session()) location.replace('login.html');</script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/premium.css">
+  <link rel="stylesheet" href="css/v8.css">
 </head>
 <body>
   <div id="app" class="app-shell">
     <aside class="sidebar">
-      <div class="brand">AgroSense</div>
+      <div class="brand"><img src="assets/img/logo-agrosense.svg" alt="AgroSense" width="128" height="27"><span>Monitoramento de máquinas</span></div>
       <nav class="main-nav" aria-label="Menu principal">
         <a v-for="item in menu" :key="item.label"
-           href="#" class="nav-item" :class="{ active: activeMenu === item.label }"
+           href="#" :aria-current="activeMenu === item.label ? 'page' : undefined" class="nav-item" :class="{ active: activeMenu === item.label }"
            @click.prevent="goMenu(item.label)">
           <span class="nav-icon" v-html="item.icon"></span>
           <span>{{ item.label }}</span>
         </a>
       </nav>
-      <div class="sidebar-footer">
-        <a href="#">Facebook</a><a href="#">Twitter</a><a href="#">Google</a>
-      </div>
+      <div class="sidebar-footer"><span class="side-avatar" aria-hidden="true">{{ userInitials }}</span><div class="side-user"><b>{{ currentUser.nome }}</b><small>{{ userProfileLabel }} · demonstração</small></div></div>
     </aside>
 
     <main class="main-panel">
-      <header class="topbar">
-        <div v-if="activeMenu === 'Máquinas' && currentMachine">
+      <header class="topbar" :class="{ 'home-topbar': activeMenu === 'Início' }">
+        <div v-if="activeMenu === 'Início'" class="home-context">Monitoramento de máquinas</div>
+        <div v-else-if="activeMenu === 'Máquinas' && currentMachine">
           <button type="button" class="back-link" @click="backToList"><span aria-hidden="true">‹</span> Máquinas</button>
           <h1>{{ currentMachine.id }} - {{ currentMachine.name }}</h1>
           <p class="subtitle detail-sub">
@@ -45,6 +45,7 @@
           <p class="subtitle">{{ pageSubtitle }}</p>
         </div>
         <div class="top-actions">
+          <span class="sim-pill" title="Os dados são gerados no navegador; não há servidor de telemetria"><i aria-hidden="true"></i>Simulação local · atualiza a cada 2 s</span>
           <div class="notification-area" ref="notificationArea">
             <button type="button" class="icon-button notification" data-tooltip="Notificações" :aria-label="'Notificações: ' + unreadAlerts + ' não lidas'"
                     :aria-expanded="notice" aria-controls="notification-center" @click.stop="toggleNotice">
@@ -102,77 +103,175 @@
         </div>
       </Transition>
 
+      <div v-if="activeMenu === 'Início'" class="home-view">
+        <section class="home-welcome" aria-labelledby="home-title">
+          <h1 id="home-title">Bem-vindo ao AgroSense, {{ currentUser.nome }}.</h1>
+          <p>Acompanhe suas máquinas, identifique alertas e organize as atividades de manutenção em um só lugar.</p>
+          <div class="home-actions">
+            <button type="button" class="home-button home-primary" @click="goFromHome('Dashboard')">Acessar monitoramento</button>
+            <button type="button" class="home-button" @click="goFromHome('Máquinas')">Ver máquinas</button>
+          </div>
+        </section>
+
+        <section aria-labelledby="home-shortcuts">
+          <h2 id="home-shortcuts" class="home-section-title">Acesso rápido</h2>
+          <div class="home-modules">
+            <button v-if="currentUser.perfil === 'tecnico'" type="button" class="home-module" @click="openHomeAlerts">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Zm0 6v4m0 3v.1"/></svg>
+              <strong>Alertas</strong><span>Identifique equipamentos que precisam de atenção.</span>
+            </button>
+            <button type="button" class="home-module" @click="goFromHome('Máquinas')">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="16.5" r="3.5"/><circle cx="18" cy="17.5" r="2.2"/><path d="M3.5 13V7h6l2 5h6.5M13 7h3l1.5 5"/></svg>
+              <strong>Máquinas</strong><span>Consulte equipamentos e suas condições.</span>
+            </button>
+            <button v-if="currentUser.perfil !== 'tecnico'" type="button" class="home-module" @click="openHomeAlerts">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Zm0 6v4m0 3v.1"/></svg>
+              <strong>Alertas</strong><span>Identifique equipamentos que precisam de atenção.</span>
+            </button>
+            <button type="button" class="home-module" @click="goFromHome('Dashboard')">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-6 4 12 3-6h4"/></svg>
+              <strong>Dashboard</strong><span>Acompanhe a telemetria e a situação por setor.</span>
+            </button>
+            <button v-if="menu.some(item => item.label === 'Relatórios')" type="button" class="home-module" @click="goFromHome('Relatórios')">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5m-5 4h5"/></svg>
+              <strong>Relatórios</strong><span>Consulte o histórico e os indicadores operacionais.</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="home-feature" aria-labelledby="home-feature-title">
+          <div class="home-feature-copy">
+            <p class="home-kicker">Operação agrícola</p>
+            <h2 id="home-feature-title">Mais controle sobre cada equipamento.</h2>
+            <p>Centralize informações da frota e acompanhe os indicadores que ajudam a identificar problemas durante a operação.</p>
+            <button type="button" class="home-button" @click="goFromHome('Dashboard')">Acompanhar máquinas</button>
+          </div>
+          <img src="assets/img/home-colheita.jpg" width="640" height="417" decoding="async" alt="Colheitadeira em operação em um campo de trigo">
+        </section>
+
+        <section class="home-summary" aria-labelledby="home-summary-title">
+          <div><h2 id="home-summary-title" class="home-section-title">Resumo da frota</h2><p>Dados da simulação local</p></div>
+          <dl>
+            <div><dt>Monitoradas</dt><dd>{{ counts.total }}</dd></div>
+            <div><dt>Com alertas</dt><dd>{{ alertCount }}</dd></div>
+            <div><dt>Normais</dt><dd>{{ counts.ok }}</dd></div>
+          </dl>
+          <div class="home-latest">
+            <strong>Última ocorrência</strong>
+            <p v-if="events.length">{{ events[0].id }} · {{ events[0].label }} · {{ fmtTime(events[0].time) }}</p>
+            <p v-else>Nenhuma ocorrência registrada.</p>
+          </div>
+        </section>
+      </div>
+
       <!-- ========== Dashboard ========== -->
-      <div v-if="activeMenu === 'Dashboard'" class="dashboard-view">
-        <section class="fleet-strip" aria-label="Situação da frota">
-          <div class="fleet-stat"><b v-number-pop="counts.total">{{ counts.total }}</b><span>Máquinas</span></div>
-          <div class="fleet-stat ok"><b v-number-pop="counts.ok">{{ counts.ok }}</b><span>Normais</span></div>
-          <div class="fleet-stat warn"><b v-number-pop="counts.warn">{{ counts.warn }}</b><span>Em atenção</span></div>
-          <div class="fleet-stat crit"><b v-number-pop="counts.crit">{{ counts.crit }}</b><span>Críticas</span></div>
+      <div v-else-if="activeMenu === 'Dashboard'" class="dashboard-view">
+        <section class="kpi-row" aria-label="Situação da frota">
+          <div class="kpi kpi-fleet">
+            <span class="kpi-label">Máquinas</span>
+            <b v-number-pop="counts.total">{{ counts.total }}</b>
+            <dl class="kpi-split"><div v-for="x in fleetSplit" :key="x.label"><dd>{{ x.value }}</dd><dt>{{ x.label }}</dt></div></dl>
+          </div>
+          <div class="kpi kpi-ok">
+            <span class="kpi-label">Normais</span>
+            <b v-number-pop="counts.ok">{{ counts.ok }}</b>
+            <span class="kpi-meta">{{ okShare }}% da frota</span>
+            <span class="kpi-note">Dentro dos limites</span>
+          </div>
+          <button type="button" class="kpi kpi-warn" @click="alertFilter = alertFilter === 'warn' ? 'all' : 'warn'" :aria-pressed="alertFilter === 'warn'">
+            <span class="kpi-label">Em atenção</span>
+            <b v-number-pop="counts.warn">{{ counts.warn }}</b>
+            <span class="kpi-meta">{{ issueTotals.warn }} {{ issueTotals.warn === 1 ? 'leitura' : 'leituras' }} fora da faixa</span>
+            <span class="kpi-act">{{ alertFilter === 'warn' ? 'Limpar filtro' : 'Filtrar lista' }}</span>
+          </button>
+          <button type="button" class="kpi kpi-crit" @click="alertFilter = alertFilter === 'crit' ? 'all' : 'crit'" :aria-pressed="alertFilter === 'crit'">
+            <span class="kpi-label"><span aria-hidden="true">▲ </span>Críticas</span>
+            <b v-number-pop="counts.crit">{{ counts.crit }}</b>
+            <span class="kpi-meta">{{ issueTotals.crit }} {{ issueTotals.crit === 1 ? 'leitura' : 'leituras' }} em nível crítico</span>
+            <span class="kpi-act">{{ alertFilter === 'crit' ? 'Limpar filtro' : 'Filtrar lista' }}</span>
+          </button>
+        </section>
+
+        <section class="panel alerts-panel">
+            <header class="panel-head">
+              <div><h2>Equipamentos que precisam de atenção</h2><p class="panel-sub">{{ alertCount }} {{ alertCount === 1 ? 'máquina' : 'máquinas' }} · {{ issueTotals.crit + issueTotals.warn }} leituras fora da faixa</p></div>
+              <div class="seg" role="group" aria-label="Filtrar por gravidade">
+                <button type="button" :aria-pressed="alertFilter === 'all'" @click="alertFilter = 'all'">Todas</button>
+                <button type="button" :aria-pressed="alertFilter === 'crit'" @click="alertFilter = 'crit'">Críticas</button>
+                <button type="button" :aria-pressed="alertFilter === 'warn'" @click="alertFilter = 'warn'">Atenção</button>
+              </div>
+            </header>
+            <ul v-if="alertRows.length" class="alert-list">
+              <li class="alert-cols" aria-hidden="true"><span>Gravidade</span><span>Equipamento</span><span>Métrica</span><span class="r">Leitura</span><span>Limite</span><span></span></li>
+              <li v-for="row in alertRows" :key="row.m.id" class="alert-item">
+                <div class="alert-line">
+                  <span class="sev-badge" :class="row.ev.status"><i aria-hidden="true">{{ row.ev.status === 'crit' ? '▲' : '●' }}</i>{{ row.ev.status === 'crit' ? 'Crítico' : 'Atenção' }}</span>
+                  <button type="button" class="eq" :aria-label="'Abrir detalhes de ' + row.m.id" @click="openMachineById(row.m.id)">
+                    <span class="eq-ico" v-html="machineIcon(row.m.category)"></span>
+                    <span class="eq-txt"><span class="eq-l1"><b>{{ row.m.id }}</b> {{ row.m.name }}</span><small>{{ row.m.setor }}</small></span>
+                  </button>
+                  <span class="a-metric">{{ row.views[0].metric }}</span>
+                  <span class="a-read" :class="'l' + row.views[0].level">{{ row.views[0].value }}<small>{{ row.views[0].unit }}</small></span>
+                  <span class="a-limit">{{ row.views[0].cmp }} {{ row.views[0].limit }} {{ row.views[0].unit }}</span>
+                  <button v-if="row.views.length > 1" type="button" class="more" :aria-expanded="!!expandedAlerts[row.m.id]" :aria-controls="'more-' + row.m.id" :aria-label="(expandedAlerts[row.m.id] ? 'Ocultar' : 'Mostrar') + ' outros ' + (row.views.length - 1) + ' desvios de ' + row.m.id" @click="expandedAlerts[row.m.id] = !expandedAlerts[row.m.id]">+{{ row.views.length - 1 }}</button>
+                  <span v-else></span>
+                </div>
+                <ul v-if="expandedAlerts[row.m.id]" :id="'more-' + row.m.id" class="alert-sub">
+                  <li v-for="v in row.views.slice(1)" :key="v.key" class="alert-line sub">
+                    <span class="sev-badge" :class="v.level === 2 ? 'crit' : 'warn'"><i aria-hidden="true">{{ v.level === 2 ? '▲' : '●' }}</i>{{ v.level === 2 ? 'Crítico' : 'Atenção' }}</span>
+                    <span></span>
+                    <span class="a-metric">{{ v.metric }}</span>
+                    <span class="a-read" :class="'l' + v.level">{{ v.value }}<small>{{ v.unit }}</small></span>
+                    <span class="a-limit">{{ v.cmp }} {{ v.limit }} {{ v.unit }}</span>
+                    <span></span>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <p v-else-if="attentionList.length" class="no-issue">Nenhuma máquina neste filtro.</p>
+            <p v-else class="no-issue">Nenhuma máquina com alerta agora.</p>
         </section>
 
         <div class="dash-grid">
-          <section class="panel">
-            <h2>Precisam de atenção</h2>
-            <ul v-if="attentionList.length" class="attn-list">
-              <li v-for="row in attentionList" :key="row.m.id">
-                <button type="button" class="attn-row" @click="openMachineById(row.m.id)">
-                  <span class="attn-dot" :class="row.ev.status"></span>
-                  <span class="attn-main"><b>{{ row.m.id }}</b> {{ row.m.name }}<small>{{ row.m.setor }}</small></span>
-                  <span class="attn-text">{{ row.ev.issues[0].text }}<span v-if="row.ev.issues.length > 1"> (mais {{ row.ev.issues.length - 1 }})</span></span>
-                  <span class="go" aria-hidden="true">›</span>
-                </button>
-              </li>
-            </ul>
-            <p v-else class="no-issue">Nenhuma máquina com alerta agora.</p>
+          <section class="panel sector-panel">
+            <header class="panel-head">
+              <div><h2>Estado por setor</h2><p class="panel-sub">Clique numa coluna para listar os equipamentos</p></div>
+            </header>
+            <sector-chart v-if="sectorRows.length" :rows="sectorRows" :selected="selectedSector" @select="pickSector"></sector-chart>
+            <p v-else class="no-issue">Nenhum setor cadastrado. Adicione um em Cadastro.</p>
+            <div v-if="selectedSector" class="sector-detail">
+              <div class="sector-detail-head"><b>{{ selectedSector }}</b><button type="button" class="link-btn" @click="pickSector(selectedSector)">Limpar seleção</button></div>
+              <ul v-if="sectorMachines.length">
+                <li v-for="row in sectorMachines" :key="row.m.id"><button type="button" @click="openMachineById(row.m.id)">
+                  <span class="sev-badge" :class="row.ev.status"><i aria-hidden="true">{{ row.ev.status === 'crit' ? '▲' : row.ev.status === 'warn' ? '●' : '✓' }}</i>{{ row.ev.status === 'crit' ? 'Crítico' : row.ev.status === 'warn' ? 'Atenção' : 'Normal' }}</span>
+                  <span class="sd-eq"><b>{{ row.m.id }}</b> {{ row.m.name }}</span>
+                  <span class="sd-note">{{ row.ev.issues.length ? issueView(row.m, row.ev.issues[0]).metric : 'Sem desvios' }}</span>
+                </button></li>
+              </ul>
+              <p v-else class="no-issue">Sem máquinas neste setor.</p>
+            </div>
           </section>
 
-          <section class="panel">
-            <h2>Por setor</h2>
-            <ul v-if="sectorRows.length" class="sector-list">
-              <li v-for="row in sectorRows" :key="row.s.nome" class="sector-row">
-                <div class="sector-top">
-                  <b>{{ row.s.nome }}</b>
-                  <span>{{ row.total }} {{ row.total === 1 ? 'máquina' : 'máquinas' }}</span>
-                </div>
-                <template v-if="row.total">
-                  <div class="sector-bar" role="img" :aria-label="row.ok + ' normais, ' + row.warn + ' em atenção, ' + row.crit + ' críticas'">
-                    <i class="seg ok" :style="{ width: row.pct.ok + '%' }"></i><i class="seg warn" :style="{ width: row.pct.warn + '%' }"></i><i class="seg crit" :style="{ width: row.pct.crit + '%' }"></i>
-                  </div>
-                  <small>{{ row.ok }} normais, {{ row.warn }} em atenção, {{ row.crit }} críticas</small>
-                </template>
-                <small v-else>Sem máquinas cadastradas.</small>
-              </li>
-            </ul>
-            <p v-else class="no-issue">Nenhum setor cadastrado. Adicione um em Cadastro.</p>
+          <section class="panel telemetry-panel">
+          <header class="panel-head">
+            <div><h2>Telemetria por máquina</h2><p class="panel-sub">Últimos 80 s · {{ telemetry.series.length }} de {{ telemetry.scopeTotal }} {{ telemetry.scopeTotal === 1 ? 'máquina' : 'máquinas' }} · {{ telemetry.outCount }} fora da faixa neste sensor</p></div>
+          </header>
+          <div class="tele-controls">
+            <div class="seg" role="group" aria-label="Sensor">
+              <button v-for="t in chartTabs" :key="t.key" type="button" :aria-pressed="chartKey === t.key" @click="chartKey = t.key">{{ t.label }}</button>
+            </div>
+            <div class="tele-scope"><agro-select v-model="telemetryScope" :options="telemetryScopes" label="Escopo da telemetria"></agro-select></div>
+            <label class="tele-check"><input type="checkbox" v-model="telemetryOnlyAlerts"> Só máquinas fora da faixa</label>
+          </div>
+          <telemetry-chart v-if="telemetry.series.length" :series="telemetry.series" :limits="telemetry.limits" :meta="telemetry.meta"></telemetry-chart>
+          <p v-else class="tele-empty">{{ telemetry.emptyText }}</p>
+          <p v-if="telemetry.limitHint && telemetry.series.length" class="tele-hint">Os limites variam por categoria. Escolha Tratores, Colheitadeiras ou uma máquina para ver as linhas de limite.</p>
+          <ul v-if="telemetry.series.length" class="tele-chips" aria-label="Leitura atual por máquina">
+            <li v-for="x in telemetry.series" :key="x.id"><button type="button" :class="'l' + x.level" :aria-pressed="telemetryScope === 'm:' + x.id" @click="telemetryScope = telemetryScope === 'm:' + x.id ? 'all' : 'm:' + x.id" :title="x.name"><span class="chip-sym" aria-hidden="true">{{ x.level === 2 ? '▲' : x.level === 1 ? '●' : '✓' }}</span><b>{{ x.id }}</b>{{ fmt(x.now, telemetry.meta.digits) }} {{ telemetry.meta.unit }}</button></li>
+          </ul>
+          <p class="sim-note">Leituras simuladas no navegador. Limites de exemplo por categoria; nada é consultado em servidor.</p>
           </section>
         </div>
-
-        <section class="panel chart-panel">
-          <div class="chart-head">
-            <h2>Média da frota nos últimos 80 segundos</h2>
-            <div class="tabs chart-tabs">
-              <button v-for="t in chartTabs" :key="t.key" :class="{ selected: chartKey === t.key }" @click="chartKey = t.key">{{ t.label }}</button>
-            </div>
-          </div>
-          <div v-if="chart.lines.length" class="chart-body">
-            <div class="chart-y">
-              <span>{{ fmt(chart.max, chartMeta.digits) }}</span>
-              <span>{{ fmt(chart.mid, chartMeta.digits) }}</span>
-              <span>{{ fmt(chart.min, chartMeta.digits) }}</span>
-            </div>
-            <svg class="chart-svg" viewBox="0 0 600 170" preserveAspectRatio="none" role="img" :aria-label="'Gráfico de ' + chartMeta.label">
-              <line x1="0" y1="12" x2="600" y2="12" class="grid"/>
-              <line x1="0" y1="85" x2="600" y2="85" class="grid"/>
-              <line x1="0" y1="158" x2="600" y2="158" class="grid"/>
-              <polyline v-for="l in chart.lines" :key="l.key" :class="'chart-line line-' + l.key" :points="l.points"/>
-            </svg>
-          </div>
-          <ul class="chart-legend">
-            <li v-for="l in chart.lines" :key="l.key"><i :class="'line-' + l.key"></i>{{ l.label }} <b>{{ fmt(l.last, chartMeta.digits) }} {{ chartMeta.unit }}</b></li>
-          </ul>
-          <p class="sim-note">Leituras simuladas.</p>
-        </section>
       </div>
 
       <!-- ========== Máquinas ========== -->
@@ -185,6 +284,9 @@
             <div class="viewer-tools">
               <button type="button" @click="toggleRotate">{{ autoRotate ? 'Parar giro' : 'Girar sozinha' }}</button>
               <button type="button" @click="resetView">Vista inicial</button>
+              <button type="button" @click="focusIssue({anchor:'motor'})">Motor</button>
+              <button type="button" @click="focusIssue({anchor:'transmissao'})">Transmissão</button>
+              <button type="button" @click="focusIssue({anchor:'hidraulica'})">Hidráulica</button>
             </div>
             <p class="viewer-hint">Arraste para girar, role para aproximar</p>
           </div>
@@ -192,7 +294,7 @@
           <div class="detail-side">
             <div class="panel">
               <h2>Leituras agora</h2>
-              <div v-for="r in readings(currentMachine)" :key="r.key" class="reading" :class="'lvl-' + r.level">
+              <div v-for="r in readings(currentMachine)" :key="r.key" class="a-read" :class="'lvl-' + r.level">
                 <div>
                   <div class="reading-name">{{ r.label }}</div>
                   <div class="reading-value">{{ r.value }}<small>{{ r.unit }}</small></div>
@@ -273,9 +375,9 @@
                     <td class="machine-id">{{ m.id }}</td>
                     <td class="machine-name">{{ m.name }}<small>{{ m.modelo }}</small></td>
                     <td class="address">{{ m.setor }}</td>
-                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.temp">{{ fmt(m.temp, 1) }} °C</td>
-                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.rpm">{{ fmt(m.rpm, 0) }} rpm</td>
-                    <td class="metric" :class="'lvl-' + evaluations[m.id].levels.pressao">{{ fmt(m.pressao, 2) }} bar</td>
+                    <td class="a-metric" :class="'lvl-' + evaluations[m.id].levels.temp">{{ fmt(m.temp, 1) }} °C</td>
+                    <td class="a-metric" :class="'lvl-' + evaluations[m.id].levels.rpm">{{ fmt(m.rpm, 0) }} rpm</td>
+                    <td class="a-metric" :class="'lvl-' + evaluations[m.id].levels.pressao">{{ fmt(m.pressao, 2) }} bar</td>
                     <td><span class="status" :class="evaluations[m.id].status"><i></i>{{ evaluations[m.id].label }}</span></td>
                     <td class="go" aria-hidden="true">›</td>
                   </tr>
@@ -303,9 +405,7 @@
             <div class="form-grid">
               <label class="field">
                 <span>Categoria</span>
-                <select v-model="form.category">
-                  <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.key === 'trator' ? 'Trator' : 'Colheitadeira' }}</option>
-                </select>
+                <agro-select v-model="form.category" label="Categoria" :options="categories.map(c => ({value:c.key,label:c.key === 'trator' ? 'Trator' : 'Colheitadeira'}))"></agro-select>
               </label>
               <label class="field">
                 <span>Número da máquina</span>
@@ -322,10 +422,7 @@
               </label>
               <label class="field">
                 <span>Setor</span>
-                <select v-model="form.setor" :disabled="!sectors.length">
-                  <option v-if="!sectors.length" value="">Nenhum setor cadastrado</option>
-                  <option v-for="s in sectors" :key="s.nome" :value="s.nome">{{ s.nome }}</option>
-                </select>
+                <agro-select v-model="form.setor" label="Setor" :disabled="!sectors.length" :options="sectors.map(s => ({value:s.nome,label:s.nome}))"></agro-select>
               </label>
               <label class="field">
                 <span>Ano</span>
@@ -345,9 +442,7 @@
               </label>
               <label class="field">
                 <span>Como o simulador deve se comportar</span>
-                <select v-model="form.behavior">
-                  <option v-for="b in behaviors" :key="b.key" :value="b.key">{{ b.label }}</option>
-                </select>
+                <agro-select v-model="form.behavior" label="Comportamento do simulador" :options="behaviors.map(b => ({value:b.key,label:b.label}))"></agro-select>
               </label>
             </div>
             <p v-if="formError" class="form-msg err" role="alert">{{ formError }}</p>
@@ -420,17 +515,11 @@
         <section class="report-controls">
           <label class="field inline">
             <span>Setor</span>
-            <select v-model="reportSetor">
-              <option>Todos</option>
-              <option v-for="s in sectors" :key="s.nome">{{ s.nome }}</option>
-            </select>
+            <agro-select v-model="reportSetor" label="Setor do relatório" :options="[{value:'Todos',label:'Todos'}, ...sectors.map(s => ({value:s.nome,label:s.nome}))]"></agro-select>
           </label>
           <label class="field inline">
             <span>Categoria</span>
-            <select v-model="reportCategoria">
-              <option value="Todas">Todas</option>
-              <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.label }}</option>
-            </select>
+            <agro-select v-model="reportCategoria" label="Categoria do relatório" :options="[{value:'Todas',label:'Todas'}, ...categories.map(c => ({value:c.key,label:c.label}))]"></agro-select>
           </label>
           <div class="report-buttons">
             <button type="button" class="btn ghost" @click="resetRecord">Zerar registro</button>
@@ -552,6 +641,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="js/machines.js"></script>
   <script src="js/viewer3d.js"></script>
+  <script src="vendor/echarts.min.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/select.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
